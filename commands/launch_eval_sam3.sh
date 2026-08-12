@@ -17,20 +17,20 @@ declare -A cuda_map
 # CONFIGURATION: Define CUDA devices and script arguments for each task
 # -----------------------------------------------------------------------------------------
 # # 1. pusht
-# cuda_map["pusht"]="2"
-# eval_args["pusht"]="policy=pusht_sam3_psmall_bs128_lr0.01 solver.n_steps=30 solver.num_samples=300 solver.batch_size=1 eval.num_eval=50 video_path=video/sam3_pusht_bug-recover save_frames=true cost_function=mask n_epoch=10 --config-name pusht"
+cuda_map["pusht"]="0"
+eval_args["pusht"]="policy=pusht_sam3_psmall_bs128_lr0.01 solver.n_steps=30 solver.num_samples=300 solver.batch_size=1 eval.num_eval=50 video_path=video/sam3_pusht_bug-recover save_frames=true cost_function=mask n_epoch=10 --config-name pusht"
 
 # 2. reacher
-cuda_map["reacher"]="1"
+cuda_map["reacher"]="0"
 eval_args["reacher"]="policy=reacher_sam3_psmall_bs128_lr0.01 solver.n_steps=10 solver.num_samples=300 solver.batch_size=1 eval.num_eval=50 video_path=video/sam3_reacher_bug-recover_bs128_lr0.01 save_frames=true cost_function=mask n_epoch=10 --config-name reacher"
 
 # 3. cube
-cuda_map["cube"]="1"
+cuda_map["cube"]="0"
 eval_args["cube"]="policy=cube_sam3_psmall_bs128_lr0.01 solver.n_steps=10 solver.num_samples=300 solver.batch_size=1 eval.num_eval=50 video_path=video/sam3_cube_bug-recover_bs128_lr0.01 save_frames=true cost_function=mask n_epoch=10 --config-name cube"
 
 # 4. tworoom
-# cuda_map["tworoom"]="6"
-# eval_args["tworoom"]="policy=tworoom_sam3_psmall_bs128_lr0.01 solver.n_steps=10 solver.num_samples=300 solver.batch_size=1 eval.num_eval=50 video_path=video/sam3_tworoom_bug-recover save_frames=true cost_function=mask n_epoch=10 --config-name tworoom"
+cuda_map["tworoom"]="0"
+eval_args["tworoom"]="policy=tworoom_sam3_psmall_bs128_lr0.01 solver.n_steps=10 solver.num_samples=300 solver.batch_size=1 eval.num_eval=50 video_path=video/sam3_tworoom_bug-recover save_frames=true cost_function=mask n_epoch=10 --config-name tworoom"
 # -----------------------------------------------------------------------------------------
 
 # Loop through the tasks and launch tmux sessions

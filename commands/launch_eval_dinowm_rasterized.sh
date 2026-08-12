@@ -18,19 +18,19 @@ declare -A cuda_map
 # -----------------------------------------------------------------------------------------
 # 1. pusht
 cuda_map["pusht"]="6"
-eval_args["pusht"]="policy=pusht_dinov2_small_psmall solver.n_steps=30 solver.num_samples=300 solver.batch_size=1 eval.num_eval=50 video_path=video/rasterized_dino-wm_pusht rastered_masks_goals=true --config-name pusht"
+eval_args["pusht"]="policy=pusht_dinov2_small_psmall_bs128_lr0.01 solver.n_steps=30 solver.num_samples=300 solver.batch_size=1 eval.num_eval=50 video_path=video/rasterized_dino-wm_pusht_bs128_lr0.01 rastered_masks_goals=true --config-name pusht"
 
 # 2. reacher
 cuda_map["reacher"]="6"
-eval_args["reacher"]="policy=reacher_dinov2_small_psmall solver.n_steps=10 solver.num_samples=300 solver.batch_size=1 eval.num_eval=50 video_path=video/rasterized_dino-wm_reacher rastered_masks_goals=true --config-name reacher"
+eval_args["reacher"]="policy=reacher_dinov2_small_psmall_bs128_lr0.01 solver.n_steps=10 solver.num_samples=300 solver.batch_size=1 eval.num_eval=50 video_path=video/rasterized_dino-wm_reacher_bs128_lr0.01 rastered_masks_goals=true --config-name reacher"
 
 # 3. cube
 cuda_map["cube"]="6"
-eval_args["cube"]="policy=cube_dinov2_small_psmall solver.n_steps=10 solver.num_samples=300 solver.batch_size=1 eval.num_eval=50 video_path=video/rasterized_dino-wm_cube rastered_masks_goals=true --config-name cube"
+eval_args["cube"]="policy=cube_dinov2_small_psmall_bs128_lr0.01 solver.n_steps=10 solver.num_samples=300 solver.batch_size=1 eval.num_eval=50 video_path=video/rasterized_dino-wm_cube_bs128_lr0.01 rastered_masks_goals=true --config-name cube"
 
 # 4. tworoom
 cuda_map["tworoom"]="6"
-eval_args["tworoom"]="policy=tworoom_dinov2_small_psmall solver.n_steps=10 solver.num_samples=300 solver.batch_size=1 eval.num_eval=50 video_path=video/rasterized_dino-wm_tworoom rastered_masks_goals=true --config-name tworoom"
+eval_args["tworoom"]="policy=tworoom_dinov2_small_psmall_bs128_lr0.01 solver.n_steps=10 solver.num_samples=300 solver.batch_size=1 eval.num_eval=50 video_path=video/rasterized_dino-wm_tworoom_bs128_lr0.01 rastered_masks_goals=true --config-name tworoom"
 # -----------------------------------------------------------------------------------------
 
 # Loop through the tasks and launch tmux sessions

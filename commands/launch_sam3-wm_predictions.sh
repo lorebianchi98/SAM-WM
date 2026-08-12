@@ -1,4 +1,4 @@
-CUDA_VISIBLE_DEVICES=6 python scripts/ablations/predict_masks.py policy=pusht_sam3_psmall_bs128_lr0.01 eval.num_eval=50 video_path=video/masks_pusht_bs128_lr0.01 cost_function=mask --config-name pusht
-CUDA_VISIBLE_DEVICES=6 python scripts/ablations/predict_masks.py policy=cube_sam3_psmall_bs128_lr0.01 eval.num_eval=50 video_path=video/masks_cube_bs128_lr0.01 cost_function=mask --config-name cube
-CUDA_VISIBLE_DEVICES=6 python scripts/ablations/predict_masks.py policy=reacher_sam3_psmall_bs128_lr0.01 eval.num_eval=50 video_path=video/masks_reacher_bs128_lr0.01 cost_function=mask --config-name reacher
-CUDA_VISIBLE_DEVICES=6 python scripts/ablations/predict_masks.py policy=tworoom_sam3_psmall_bs128_lr0.01 eval.num_eval=50 video_path=video/masks_tworoom_bs128_lr0.01 cost_function=mask --config-name tworoom
+CUDA_VISIBLE_DEVICES=0 python scripts/ablations/predict_masks.py policy=pusht_sam3_psmall_bs128_lr0.01 eval.num_eval=50 video_path=video/masks_pusht_bs128_lr0.01 cost_function=mask --config-name pusht
+CUDA_VISIBLE_DEVICES=0 python scripts/ablations/predict_masks.py policy=cube_sam3_psmall_bs128_lr0.01 eval.num_eval=50 video_path=video/masks_cube_bs128_lr0.01 cost_function=mask --config-name cube
+CUDA_VISIBLE_DEVICES=0 python scripts/ablations/predict_masks.py policy=reacher_sam3_psmall_bs128_lr0.01 eval.num_eval=50 video_path=video/masks_reacher_bs128_lr0.01 cost_function=mask --config-name reacher
+CUDA_VISIBLE_DEVICES=0 python scripts/ablations/predict_masks.py policy=tworoom_sam3_psmall_bs128_lr0.01 eval.num_eval=50 video_path=video/masks_tworoom_bs128_lr0.01 cost_function=mask --config-name tworoom

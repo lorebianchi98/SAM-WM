@@ -1,57 +1,67 @@
-<h1 align="center">stable-worldmodel</h1>
+# SAM3-WM: World Models on Segmentation Features enable Mask-Guided Planning
 
-<p align="center"><i>A platform for reproducible world model research and evaluation.</i></p>
+SAM3-WM extends the [stable-worldmodel](https://github.com/galilai-group/stable-worldmodel) project by adding action-conditioned transition-model
+training over frozen Segment Anything 3 (SAM3) features. This enables zero-shot model-predictive
+control (MPC) using natural-language goals and binary destination masks instead of target RGB images.
 
-<p align="center">
-  <a href="https://galilai-group.github.io/stable-worldmodel/"><img alt="Documentation" src="https://img.shields.io/badge/Docs-blue.svg"/></a>
-  <a href="https://github.com/galilai-group/stable-worldmodel"><img alt="Tests" src="https://img.shields.io/github/actions/workflow/status/galilai-group/stable-worldmodel/tests.yaml?label=Tests"/></a>
-  <a href="https://pypi.python.org/pypi/stable-worldmodel/#history"><img alt="PyPI" src="https://img.shields.io/pypi/v/stable-worldmodel.svg"/></a>
-  <a href="https://arxiv.org/abs/2605.21800v1" target="_blank" style="margin: 2px;"><img alt="ArXiv" src="https://img.shields.io/badge/arXiv-2605.21800-b5212f?logo=arxiv" style="display: inline-block; vertical-align: middle;"/></a>
-  <a href="https://pytorch.org/get-started/locally/"><img alt="PyTorch" src="https://img.shields.io/badge/PyTorch-ee4c2c?logo=pytorch&logoColor=white"/></a>
-  <a href="https://github.com/astral-sh/ruff"><img alt="Ruff" src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json"/></a>
-</p>
+<table align="center">
+  <tr>
+    <td align="center">
+      <b>Push-T</b><br>
+      <video src="assets/pusht_plan.mp4" width="100%" controls autoplay loop muted></video>
+    </td>
+    <td align="center">
+      <b>Two-Room</b><br>
+      <video src="assets/tworoom_plan.mp4" width="100%" controls autoplay loop muted></video>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <b>Reacher</b><br>
+      <video src="assets/reacher_plan.mp4" width="100%" controls autoplay loop muted></video>
+    </td>
+    <td align="center">
+      <b>OGBench-Cube</b><br>
+      <video src="assets/cube_plan.mp4" width="100%" controls autoplay loop muted></video>
+    </td>
+  </tr>
+</table>
 
-<p align="center">
+<!-- <p align="center">
   <a href="#installation"><b>Installation</b></a> ·
-  <a href="#quick-start"><b>Quick Start</b></a> ·
-  <a href="#environments"><b>Environments</b></a> ·
-  <a href="#solvers-and-baselines"><b>Solvers & Baselines</b></a> ·
-  <a href="https://galilai-group.github.io/stable-worldmodel/"><b>Documentation</b></a> ·
-  <a href="https://arxiv.org/abs/2605.21800v1"><b>Paper</b></a> ·
-  <a href="#citation"><b>Citation</b></a>
-</p>
+  <a href="#quick-start"><b>Datasets</b></a> ·
+  <a href="#environments"><b>Training</b></a> ·
+  <a href="#solvers-and-baselines"><b>Evaluation</b></a> ·
+  <a href="https://galilai-group.github.io/stable-worldmodel/"><b>Results</b></a> ·
+  <!-- <a href="#citation"><b>Citation</b></a> -->
+</p> 
+Paper coming soon!
 
----
+## Features
 
-`stable-worldmodel` provides a single, unified interface for the three stages of world model research — **collecting data**, **training**, and **evaluating with model-predictive control** — across a large suite of standardized environments. It ships with reference implementations of common baselines and planning solvers so research code can stay focused on the contribution that matters: the model and the objective.
+- Action-conditioned transition model trained on SAM3 features
+- Zero-shot MPC with natural language queries and mask-based objectives
+- Integrations with existing stable-worldmodel datasets and policies
 
+
+## News
+- 📢 Join us in Malmö for the presentation of SAM3-WM at the [UniWorld Workshop](https://uniworld-ai.github.io/) and the [How to Build Effective World Models for Embodied AI](https://eccv26wmeai.github.io/) workshop at ECCV 2026!
 ## Installation
-
-From PyPI:
-
-```bash
-pip install stable-worldmodel            # base only
-pip install 'stable-worldmodel[all]'     # + training, environments, and data formats
-```
-
-LeRobot dataset support is a separate opt-in extra (requires Python 3.12+): `pip install 'stable-worldmodel[lerobot]'`.
-
-From source (development):
+From source:
 
 ```bash
 git clone https://github.com/galilai-group/stable-worldmodel
 cd stable-worldmodel
+# Conda example (adjust Python version as needed)
 conda create -n stable-wm python=3.12 -y
 conda activate stable-wm
-
-conda install -c conda-forge uv -y # Optional in case uv is not installed: 
-
+conda install -c conda-forge uv -y  # only if `uv` is missing
 export UV_PROJECT_ENVIRONMENT=$CONDA_PREFIX
 uv sync --extra all --group dev
-
 ```
 
-Conda instructions:
+venv workflow:
+
 ```bash
 git clone https://github.com/galilai-group/stable-worldmodel
 cd stable-worldmodel
@@ -59,256 +69,107 @@ uv venv --python=3.10 && source .venv/bin/activate
 uv sync --extra all --group dev
 ```
 
-Datasets and checkpoints are stored under `$STABLEWM_HOME` (defaults to `~/.stable_worldmodel/`). Override the variable to point at your preferred storage location.
+Datasets and checkpoints are stored under the environment variable `STABLEWM_HOME` (default: `~/.stable_worldmodel/`). Set `STABLEWM_HOME` to change the storage location.
 
+## Quick start
 
-## Quick Start
-
-```python
-import stable_worldmodel as swm
-from stable_worldmodel.policy import WorldModelPolicy, PlanConfig
-from stable_worldmodel.solver import CEMSolver
-
-# 1. Collect a dataset
-world = swm.World("swm/PushT-v1", num_envs=8)
-world.set_policy(your_expert_policy)
-world.collect("data/pusht_demo.lance", episodes=100, seed=0)
-
-# 2. Load it and train your world model (format is autodetected)
-dataset = swm.data.load_dataset("data/pusht_demo.lance", num_steps=16)
-world_model = ...  # your model
-
-# 3. Evaluate with model-predictive control
-solver = CEMSolver(model=world_model, num_samples=300)
-policy = WorldModelPolicy(solver=solver, config=PlanConfig(horizon=10))
-
-world.set_policy(policy)
-results = world.evaluate(episodes=50)
-print(f"Success Rate: {results['success_rate']:.1f}%")
-```
-
-Reference implementations are provided in [`scripts/train/`](scripts/train): [`lewm.py`](scripts/train/lewm.py) implements [LeWM](https://le-wm.github.io/), and [`prejepa.py`](scripts/train/prejepa.py) reproduces [DINO-WM](https://arxiv.org/abs/2411.04983).
-
-<p align="center">
-  <img src="docs/assets/lewm-gpu-usage.png" alt="GPU utilization comparison" width="60%">
-  <br>
-  <em>GPU utilization for LeWM trained with  Push-T LanceDB dataset on a H200 GPU.</em>
-</p>
-
-## Data Formats
-
-Recording, loading, and conversion all go through a small **format registry**. Pick the backend that matches your trade-off, or [register your own](https://galilai-group.github.io/stable-worldmodel/api/dataset/#registering-a-custom-format).
-
-| Format    | On-disk layout                                  | Best for                                       |
-|-----------|-------------------------------------------------|------------------------------------------------|
-| `lance`   | LanceDB table (episode-contiguous flat rows)    | default — append-friendly, fast indexed reads  |
-| `hdf5`    | single `.h5` file (one dataset per column)      | portable single-file artifact                  |
-| `folder`  | `.npz` columns + one JPEG per step              | inspection, partial-key streaming              |
-| `video`   | `.npz` columns + one MP4 per episode (`decord`) | long episodes, compact image storage           |
-| `lerobot` | `lerobot://<repo_id>` (read-only adapter)       | training/eval directly on LeRobot Hub datasets |
-
-```python
-world.collect("data/pusht.lance", episodes=100)                  # default: lance
-world.collect("data/pusht_video", episodes=100, format="video")  # mp4 episodes
-
-ds = swm.data.load_dataset("data/pusht.lance", num_steps=16)     # autodetect
-swm.data.convert("data/pusht.lance", "data/pusht_video",
-                 dest_format="video", fps=30)                    # one-shot migration
-```
-
-Every writer accepts a `mode` kwarg (`'append'` (default), `'overwrite'`, `'error'`); re-running `world.collect` extends the existing dataset rather than failing.
-
-<details>
-<summary><b>Throughput & storage benchmarks</b></summary>
-
-Numbers below were produced by [`scripts/benchmark/compare_h5_lance.py`](scripts/benchmark/compare_h5_lance.py) and can be reproduced with it. Benchmarks use the [PushT dataset](https://huggingface.co/datasets/galilai-group/lewm-pusht) from the [LeWorldModel](https://le-wm.github.io/) paper.
-
-## Throughput
-
-| Format  | Source   | Cache    | samples/s | ms/step  |
-|---------|----------|----------|-----------|----------|
-| HDF5    | local    | no-cache |    1416.1 |     45.2 |
-| HDF5    | local    | cached   |    1474.0 |     43.4 |
-| LanceDB | local    | no-cache |    4814.8 |     13.3 |
-| LanceDB | local    | cached   |    4431.3 |     14.4 |
-| Video   | local    | -        |    1330.6 |     48.1 |
-| LanceDB | s3       | no-cache |    3183.7 |     20.1 |
-| LanceDB | s3       | cached   |    3253.2 |     19.7 |
-| HDF5    | s3       | no-cache |       9.1 |   7032.5 |
-| HDF5    | s3       | cached   |     756.5 |     84.6 |
-
-## Storage size per format (local)
-
-| Format  | Local size |
-|---------|------------|
-| HDF5    |   43.12 GB |
-| LanceDB |   13.31 GB |
-| Video   |  496.29 MB |
-
-</details>
-
-## Environments
-
-<div align="center">
-
-<table>
-<tr>
-<td align="center"><img src="docs/assets/ballincup.gif" width="120"/><br><img src="docs/assets/ballincup_var.gif" width="120"/></td>
-<td align="center"><img src="docs/assets/cartpole.gif"  width="120"/><br><img src="docs/assets/cartpole_var.gif"  width="120"/></td>
-<td align="center"><img src="docs/assets/cheetah.gif"   width="120"/><br><img src="docs/assets/cheetah_var.gif"   width="120"/></td>
-<td align="center"><img src="docs/assets/finger.gif"    width="120"/><br><img src="docs/assets/finger_var.gif"    width="120"/></td>
-<td align="center"><img src="docs/assets/hopper.gif"    width="120"/><br><img src="docs/assets/hopper_var.gif"    width="120"/></td>
-</tr>
-</table>
-
-<table>
-<tr>
-<td align="center"><img src="docs/assets/pendulum.gif"  width="120"/><br><img src="docs/assets/pendulum_var.gif"  width="120"/></td>
-<td align="center"><img src="docs/assets/quadruped.gif" width="120"/><br><img src="docs/assets/quadruped_var.gif" width="120"/></td>
-<td align="center"><img src="docs/assets/reacher.gif"   width="120"/><br><img src="docs/assets/reacher_var.gif"   width="120"/></td>
-<td align="center"><img src="docs/assets/walker.gif"    width="120"/><br><img src="docs/assets/walker_var.gif"    width="120"/></td>
-</tr>
-</table>
-
-<table>
-<tr>
-<td align="center"><img src="docs/assets/cartpole_control.gif"     width="120"/><br><img src="docs/assets/cartpole_control_var.gif"     width="120"/></td>
-<td align="center"><img src="docs/assets/mountain_car_control.gif" width="120"/><br><img src="docs/assets/mountain_car_control_var.gif" width="120"/></td>
-<td align="center"><img src="docs/assets/acrobot_control.gif"      width="120"/><br><img src="docs/assets/acrobot_control_var.gif"      width="120"/></td>
-<td align="center"><img src="docs/assets/pendulum_control.gif"     width="120"/><br><img src="docs/assets/pendulum_control_var.gif"     width="120"/></td>
-</tr>
-</table>
-
-<table>
-<tr>
-<td align="center"><img src="docs/assets/cube.gif"    width="120"/><br><img src="docs/assets/cube_fov.gif"    width="120"/></td>
-<td align="center"><img src="docs/assets/scene.gif"   width="120"/><br><img src="docs/assets/scene_fov.gif"   width="120"/></td>
-<td align="center"><img src="docs/assets/pusht.gif"   width="120"/><br><img src="docs/assets/pusht_fov.gif"   width="120"/></td>
-<td align="center"><img src="docs/assets/tworoom.gif" width="120"/><br><img src="docs/assets/tworoom_fov.gif" width="120"/></td>
-</tr>
-</table>
-
-<table>
-<tr>
-<td align="center"><img src="docs/assets/fetch_reach.gif"        width="120"/><br><img src="docs/assets/fetch_reach_var.gif"        width="120"/></td>
-<td align="center"><img src="docs/assets/fetch_push.gif"         width="120"/><br><img src="docs/assets/fetch_push_var.gif"         width="120"/></td>
-<td align="center"><img src="docs/assets/fetch_slide.gif"        width="120"/><br><img src="docs/assets/fetch_slide_var.gif"        width="120"/></td>
-<td align="center"><img src="docs/assets/fetch_pickandplace.gif" width="120"/><br><img src="docs/assets/fetch_pickandplace_var.gif" width="120"/></td>
-<td align="center"><img src="docs/assets/craftax_classic.gif"    width="120"/><br><img src="docs/assets/craftax.gif"                width="120"/></td>
-</tr>
-</table>
-
-<em>Top row: default appearance &nbsp;·&nbsp; Bottom row: visual factor of variation</em>
-
-</div>
-
-Environments are pulled from the [DeepMind Control Suite](https://github.com/google-deepmind/dm_control), [Gymnasium classic control](https://gymnasium.farama.org/environments/classic_control/), [OGBench](https://github.com/seohongpark/ogbench), [Craftax](https://github.com/MichaelTMatthews/Craftax), the [Arcade Learning Environment](https://ale.farama.org/) (100+ Atari games), and classical world model benchmarks ([Two-Room](https://arxiv.org/abs/2411.04983), [PushT](https://arxiv.org/abs/2303.04137)). Most environments ship with a set of **factors of variation** — independently controllable visual and physical parameters (lighting, textures, dynamics, morphology) — that make it straightforward to evaluate zero-shot generalization to distribution shifts without any additional setup. Adding a new environment only requires conforming to the [Gymnasium](https://gymnasium.farama.org/) interface.
-
-<details>
-<summary><b>Full environment list</b></summary>
-
-<div align="center">
-
-| [Environment ID](https://github.com/galilai-group/stable-worldmodel/tree/main/stable_worldmodel/envs) |  # FoV  |
-|------------------------------|---------|
-| swm/PushT-v1                 | 16      |
-| swm/TwoRoom-v1               | 17      |
-| swm/OGBCube-v0               | 11      |
-| swm/OGBScene-v0              | 12      |
-| swm/HumanoidDMControl-v0     | 7       |
-| swm/CheetahDMControl-v0      | 7       |
-| swm/HopperDMControl-v0       | 7       |
-| swm/ReacherDMControl-v0      | 8       |
-| swm/WalkerDMControl-v0       | 8       |
-| swm/AcrobotDMControl-v0      | 8       |
-| swm/PendulumDMControl-v0     | 6       |
-| swm/CartpoleDMControl-v0     | 6       |
-| swm/BallInCupDMControl-v0    | 9       |
-| swm/FingerDMControl-v0       | 10      |
-| swm/ManipulatorDMControl-v0  | 8       |
-| swm/QuadrupedDMControl-v0    | 7       |
-| swm/CartPoleControl-v1       | 10      |
-| swm/MountainCarControl-v0    | 5       |
-| swm/MountainCarContinuousControl-v0 | 4 |
-| swm/AcrobotControl-v1        | 11      |
-| swm/PendulumControl-v1       | 9       |
-| swm/FetchReach-v3            | 8       |
-| swm/FetchPush-v3             | 11      |
-| swm/FetchSlide-v3            | 11      |
-| swm/FetchPickAndPlace-v3     | 11      |
-| swm/CraftaxClassicPixels-v1  | —       |
-| swm/CraftaxClassicSymbolic-v1| —       |
-| swm/CraftaxPixels-v1         | —       |
-| swm/CraftaxSymbolic-v1       | —       |
-| [ALE/* (100+ Atari games)](https://ale.farama.org/) | — |
-
-</div>
-
-</details>
-
-## Solvers and Baselines
-
-<div align="center">
-
-| [Solver](https://github.com/galilai-group/stable-worldmodel/tree/main/stable_worldmodel/solver) | Type            |
-|---------------------------------------|-----------------|
-| Cross-Entropy Method (CEM)            | Sampling        |
-| Improved CEM (iCEM)                   | Sampling        |
-| Model Predictive Path Integral (MPPI) | Sampling        |
-| Predictive Sampling                   | Sampling        |
-| Gradient Descent (SGD, Adam)          | Gradient        |
-| Projected Gradient Descent (PGD)      | Gradient        |
-| Augmented Lagrangian                  | Constrained Opt |
-
-| [Baseline](https://github.com/galilai-group/stable-worldmodel/tree/main/scripts/train) | Type              |
-|----------|-------------------|
-| DINO-WM  | JEPA              |
-| PLDM     | JEPA              |
-| LeWM     | JEPA              |
-| GCBC     | Behaviour Cloning |
-| GCIVL    | RL                |
-| GCIQL    | RL                |
-
-</div>
-
-## Command-Line Interface
-
-After installation, the `swm` command is available for inspecting/converting datasets, environments, and checkpoints without writing code:
+1. Install package or use the development setup above.
+2. Download the datasets (see Datasets below).
+3. Run a training job (example):
 
 ```bash
-swm datasets                                        # list cached datasets
-swm inspect pusht_expert_train                      # inspect a specific dataset
-swm envs                                            # list all registered environments
-swm fovs PushT-v1                                   # show factors of variation for an environment
-swm checkpoints                                     # list available model checkpoints
-swm convert pusht_expert_train --dest-format video  # convert a dataset to another format
+python scripts/train/prejepa_sam3.py --config-name CONFIG_NAME
 ```
 
-## Documentation
+To run multiple trainings (GPU selection via script):
 
-The full documentation lives at [galilai-group.github.io/stable-worldmodel](https://galilai-group.github.io/stable-worldmodel/), with API references, tutorials, and guides.
-
-## Built on `stable-worldmodel`
-
-- **[C-JEPA](https://hazel-heejeong-nam.github.io/cjepa/)**
-- **[LeWM](https://le-wm.github.io/)**
-
-## Citation
-
-```bibtex
-@misc{maes_lld2026swm,
-  title  = {stable-worldmodel: A Platform for Reproducible World Modeling Research and Evaluation},
-  author = {Lucas Maes and Quentin Le Lidec and Luiz Facury and Nassim Massaudi and
-            Ayush Chaurasia and Francesco Capuano and Richard Gao and Taj Gillin and
-            Dan Haramati and Damien Scieur and Yann LeCun and Randall Balestriero},
-  year   = {2026},
-  eprint = {2605.21800},
-  archivePrefix = {arXiv},
-  primaryClass = {cs.LG},
-  url    = {https://arxiv.org/abs/2605.21800},
-}
+```bash
+./commands/launch_train_sam3.sh
 ```
 
-## Questions
+## Datasets
 
-Open an [issue](https://github.com/galilai-group/stable-worldmodel/issues) — happy to help.
+We use the same expert datasets as LeWorldModel. You can obtain them from the Hugging Face collection:
+
+https://huggingface.co/collections/quentinll/lewm
+
+Place downloaded datasets under `STABLEWM_HOME` (or set `STABLEWM_HOME` to your dataset root).
+
+## Training
+
+- Use `scripts/train/prejepa_sam3.py` and pass `--config-name` to select a Hydra config.
+- Example configs live in the repository's config folders (search `config` under `train/` and `plan/`).
+
+## Evaluation & Planning
+
+- Evaluation launch scripts: launch `commands/launch_eval_sam3.sh` to evaluate SAM3-WM on every environment.
+- Planning tools and evaluation helpers are under `plan/` and `scripts/` (e.g., `plan/eval_wm.py`).
+
+
+## Results 
+
+Task success rates (%) across 50 evaluation episodes. Goal-image baselines (Image) use full RGB targets; mask rows report mask-conditioned performance. Bold indicates the best mask-conditioned score per column.
+
+| Model | Goal Type | Two-Room | Reacher | Push-T | OGBench-Cube |
+|---|---:|---:|---:|---:|---:|
+| Random | -- | 0 | 10 | 2 | 50 |
+| | | | | | |
+| *DINO-WM* | Image | 100 | 79 | 92 | 86 |
+| *PLDM* | Image | 97 | 78 | 78 | 65 |
+| *LeWM* | Image | 87 | 86 | 96 | 74 |
+| | | | | | |
+| DINO-WM mask-based | Masks | **76** | 28 | 50 | 44 |
+| SAM3-WM (Ours) | Masks | **76** | **54** | **88** | **62** |
+
+Notes:
+- Image Baselines: Represent the empirical upper bound, as these models rely on complete, privileged RGB goal images of the final scene.
+
+- DINO-WM (mask-based): An adaptation of DINO-WM that receives a flat, black-and-white rendered image of the binary destination mask instead of a full RGB photo.
+
+- SAM3-WM: Outperforms mask-based feature matching across all manipulation tasks, reaching up to 88% on Push-T and 62% on OGBench-Cube without ever seeing a target image.
+
+
+## Visualize Mask predictions
+
+Use the expert-policy rollouts to visualize the world-model's predicted destination masks over expert trajectories. The helper script `scripts/ablations/predict_masks.py` produces per-episode mask-overlay videos and a trace file; a convenience launcher is available at `commands/launch_sam3-wm_predictions.sh`.
+
+
+<table align="center">
+  <tr>
+    <td align="center">
+      <b>Push-T</b><br>
+      <video src="assets/pusht_preds.mp4" width="100%" controls autoplay loop muted></video>
+    </td>
+    <td align="center">
+      <b>Two-Room</b><br>
+      <video src="assets/tworoom_preds.mp4" width="100%" controls autoplay loop muted></video>
+    </td>
+    <td align="center">
+      <b>Reacher</b><br>
+      <video src="assets/reacher_preds.mp4" width="100%" controls autoplay loop muted></video>
+    </td>
+    <td align="center">
+      <b>OGBench-Cube</b><br>
+      <video src="assets/cube_preds.mp4" width="100%" controls autoplay loop muted></video>
+    </td>
+  </tr>
+</table>
+
+Quick examples:
+
+Run a single environment (edit `policy` or config name as needed):
+
+```bash
+CUDA_VISIBLE_DEVICES=0 python scripts/ablations/predict_masks.py \
+  policy=pusht_sam3_psmall_bs128_lr0.01 eval.num_eval=50 \
+  video_path=assets/masks_pusht --config-name pusht
+```
+
+Run all environment visualizations with the launcher:
+
+```bash
+./commands/launch_sam3-wm_predictions.sh
+```
+
+## Acknowledgements
+This codebase is built upon  [stable-worldmodel](https://github.com/galilai-group/stable-worldmodel). We sincerely thank the authors and maintainers of stable-worldmodel for providing a clean, modular, and robust foundation for latent world modeling research.
