@@ -138,19 +138,19 @@ Use the expert-policy rollouts to visualize the world-model's predicted destinat
   <tr>
     <td align="center">
       <b>Push-T</b><br>
-      <video src="assets/pusht_preds.mp4" width="100%" controls autoplay loop muted></video>
+      <video src="assets/pusht_preds.mp4" width="100%" controls autoplay loop muted playsinline></video>
     </td>
     <td align="center">
       <b>Two-Room</b><br>
-      <video src="assets/tworoom_preds.mp4" width="100%" controls autoplay loop muted></video>
+      <video src="assets/tworoom_preds.mp4" width="100%" controls autoplay loop muted playsinline></video>
     </td>
     <td align="center">
       <b>Reacher</b><br>
-      <video src="assets/reacher_preds.mp4" width="100%" controls autoplay loop muted></video>
+      <video src="assets/reacher_preds.mp4" width="100%" controls autoplay loop muted playsinline></video>
     </td>
     <td align="center">
       <b>OGBench-Cube</b><br>
-      <video src="assets/cube_preds.mp4" width="100%" controls autoplay loop muted></video>
+      <video src="assets/cube_preds.mp4" width="100%" controls autoplay loop muted playsinline></video>
     </td>
   </tr>
 </table>
