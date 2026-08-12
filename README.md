@@ -3,26 +3,25 @@
 SAM3-WM extends the [stable-worldmodel](https://github.com/galilai-group/stable-worldmodel) project by adding action-conditioned transition-model
 training over frozen Segment Anything 3 (SAM3) features. This enables zero-shot model-predictive
 control (MPC) using natural-language goals and binary destination masks instead of target RGB images.
-
 <table align="center">
   <tr>
     <td align="center">
       <b>Push-T</b><br>
-      <video src="assets/pusht_plan.mp4" width="100%" controls autoplay loop muted></video>
+      <img src="assets/pusht_plan.gif" width="100%" />
     </td>
     <td align="center">
       <b>Two-Room</b><br>
-      <video src="assets/tworoom_plan.mp4" width="100%" controls autoplay loop muted></video>
+      <img src="assets/tworoom_plan.gif" width="100%" />
     </td>
   </tr>
   <tr>
     <td align="center">
       <b>Reacher</b><br>
-      <video src="assets/reacher_plan.mp4" width="100%" controls autoplay loop muted></video>
+      <img src="assets/reacher_plan.gif" width="100%" />
     </td>
     <td align="center">
       <b>OGBench-Cube</b><br>
-      <video src="assets/cube_plan.mp4" width="100%" controls autoplay loop muted></video>
+      <img src="assets/cube_plan.gif" width="100%" />
     </td>
   </tr>
 </table>
@@ -133,24 +132,25 @@ Notes:
 
 Use the expert-policy rollouts to visualize the world-model's predicted destination masks over expert trajectories. The helper script `scripts/ablations/predict_masks.py` produces per-episode mask-overlay videos and a trace file; a convenience launcher is available at `commands/launch_sam3-wm_predictions.sh`.
 
-
 <table align="center">
   <tr>
     <td align="center">
       <b>Push-T</b><br>
-      <video src="assets/pusht_preds.mp4" width="100%" controls autoplay loop muted playsinline></video>
+      <img src="assets/pusht_preds.gif" width="100%" />
     </td>
     <td align="center">
       <b>Two-Room</b><br>
-      <video src="assets/tworoom_preds.mp4" width="100%" controls autoplay loop muted playsinline></video>
+      <img src="assets/tworoom_preds.gif" width="100%" />
     </td>
+  </tr>
+  <tr>
     <td align="center">
       <b>Reacher</b><br>
-      <video src="assets/reacher_preds.mp4" width="100%" controls autoplay loop muted playsinline></video>
+      <img src="assets/reacher_preds.gif" width="100%" />
     </td>
     <td align="center">
       <b>OGBench-Cube</b><br>
-      <video src="assets/cube_preds.mp4" width="100%" controls autoplay loop muted playsinline></video>
+      <img src="assets/cube_preds.gif" width="100%" />
     </td>
   </tr>
 </table>
