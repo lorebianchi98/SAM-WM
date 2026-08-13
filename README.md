@@ -118,7 +118,7 @@ Task success rates (%) across 50 evaluation episodes. Goal-image baselines (Imag
 | *LeWM* | Image | 87 | 86 | 96 | 74 |
 | | | | | | |
 | DINO-WM mask-based | Masks | **76** | 28 | 50 | 44 |
-| SAM3-WM (Ours) | Masks | **76** | **54** | **88** | **62** |
+| SAM3-WM (Ours) | Masks | **76** | **58** | **88** | **62** |
 
 Notes:
 - Image Baselines: Represent the empirical upper bound, as these models rely on complete, privileged RGB goal images of the final scene.
@@ -142,8 +142,6 @@ Use the expert-policy rollouts to visualize the world-model's predicted destinat
       <b>Two-Room</b><br>
       <img src="assets/tworoom_preds.gif" width="100%" />
     </td>
-  </tr>
-  <tr>
     <td align="center">
       <b>Reacher</b><br>
       <img src="assets/reacher_preds.gif" width="100%" />
