@@ -529,10 +529,13 @@ class World:
                 _apply_callables(
                     self.envs.envs[i].unwrapped, callables, env_init
                 )
+            _refresh_after_dataset_callables(self, init_state)
 
         shape_prefix = self.infos['pixels'].shape[:2]
         for src, dst_prefix in [(init_state, ''), (goal_state, '')]:
             for k, v in src.items():
+                if k == 'pixels':
+                    continue
                 key = dst_prefix + k if dst_prefix else k
                 if key in self.infos or key in goal_state:
                     self.infos[key] = np.broadcast_to(
@@ -614,13 +617,19 @@ def _extract_init_goal(dataset, episodes_idx, start_steps, goal_offset):
         ball_mask = torch.stack([generate_pusht_ball_mask(torch.tensor(x)) for x in goal_state['goal_state']], dim=0)
         goal_state['goal_mask'] = torch.stack((t_mask, ball_mask), dim=1)
     elif 'tworoom' in os.path.basename(dataset.h5_file.filename):
-        circle_mask = torch.stack([generate_tworoom_circle_mask(torch.tensor(x)) for x in goal_state['goal_proprio']], dim=0)
+        circle_mask = torch.stack(
+            [
+                generate_tworoom_circle_mask(torch.tensor(x))
+                for x in goal_state['goal_proprio']
+            ],
+            dim=0,
+        )
         goal_state['goal_mask'] = circle_mask.unsqueeze(1)
     elif 'reacher' in os.path.basename(dataset.h5_file.filename):
         stick_masks = []
         circle_masks = []
         for idx in range(goal_state['goal'].shape[0]):
-            stick_mask, circle_mask = generate_reacher_masks(goal_state, idx)
+            circle_mask, stick_mask = generate_reacher_masks(goal_state, idx)
             stick_masks.append(stick_mask)
             circle_masks.append(circle_mask)
         masks = []
@@ -668,6 +677,32 @@ def _extract_init_goal(dataset, episodes_idx, start_steps, goal_offset):
         goal_images[collapsed_mask.bool()] = 255
         goal_state['goal'] = goal_images.numpy()
     return init_state, goal_state, dataset_videos
+
+
+def _refresh_after_dataset_callables(world, _init_state):
+    """Refresh rendered pixels after dataset state callables."""
+    pixels = world.infos.get('pixels')
+    if pixels is None:
+        return
+
+    h, w = pixels.shape[-3:-1] if pixels.shape[-1] in (3, 4) else pixels.shape[-2:]
+    for i, env in enumerate(world.envs.envs):
+        frame = env.render()
+        if frame is None:
+            continue
+        frame = np.asarray(frame)
+        if frame.shape[:2] != (h, w):
+            try:
+                from PIL import Image
+
+                frame = np.asarray(
+                    Image.fromarray(frame).resize(
+                        (w, h), resample=Image.Resampling.BILINEAR
+                    )
+                )
+            except (ImportError, ValueError):
+                continue
+        world.infos['pixels'][i, 0] = frame
 
 
 def _apply_callables(env, callables, init_state):

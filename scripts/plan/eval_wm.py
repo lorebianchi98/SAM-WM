@@ -134,6 +134,8 @@ def run(cfg: DictConfig):
 
             model.build_mask_decoder(**mask_kwargs)
             model.weight_cost_strategy = cfg.get('weight_cost_strategy', 'area')
+
+        if cfg.get('textual_query', None) is not None:
             dataset.textual_query = list(cfg.textual_query)
 
         if cfg.get('compile', False):
@@ -263,7 +265,9 @@ def run(cfg: DictConfig):
     results_path.parent.mkdir(parents=True, exist_ok=True)
     csv_path = Path(str(results_path).replace('txt', 'csv'))
 
-    config_json = json.dumps(OmegaConf.to_container(cfg, resolve=True), default=str)
+    config_data = OmegaConf.to_container(cfg, resolve=True)
+    config_data['eval_time'] = end_time - start_time
+    config_json = json.dumps(config_data, default=str)
     csv_row = {
         'model_name': cfg.policy,
         'n_epoch': cfg.get('n_epoch', None),

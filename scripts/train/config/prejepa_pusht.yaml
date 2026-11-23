@@ -1,0 +1,67 @@
+backbone:
+  interpolate_pos_encoding: true
+  is_video_encoder: false
+  name: dinov2_small
+  type: dinov2_small
+batch_size: 128
+cache_dir: null
+dataset_name: pusht_expert_train.h5
+defaults:
+- _self_
+- launcher: local
+dump_object: true
+frameskip: 5
+hydra:
+  job:
+    chdir: true
+image_size: 224
+model:
+  _target_: stable_worldmodel.wm.PreJEPA
+  encoder:
+    _target_: stable_worldmodel.wm.prejepa.module.create_backbone
+    name: ${backbone.name}
+  history_size: ${wm.history_size}
+  interpolate_pos_encoding: ${backbone.interpolate_pos_encoding}
+  num_pred: ${wm.num_preds}
+  predictor:
+    _target_: stable_worldmodel.wm.prejepa.CausalPredictor
+    depth: ${predictor.depth}
+    dim: ???
+    dim_head: ${predictor.dim_head}
+    dropout: ${predictor.dropout}
+    emb_dropout: ${predictor.emb_dropout}
+    heads: ${predictor.heads}
+    mlp_dim: ${predictor.mlp_dim}
+    num_frames: ${wm.history_size}
+    num_patches: ???
+n_steps: ${eval:'${wm.num_preds} + ${wm.history_size}'}
+num_workers: 16
+optimizer:
+  lr: 0.01
+  type: AdamW
+  weight_decay: 0.0
+output_model_name: pusht_${backbone.type}_p${predictor.size}_noproprio_seed${seed}
+patch_size: 14
+predictor:
+  depth: 6
+  dim_head: 64
+  dropout: 0.1
+  emb_dropout: 0.0
+  heads: 16
+  mlp_dim: 2048
+  size: small
+seed: 42
+subdir: null
+train_split: 0.9
+trainer:
+  accelerator: gpu
+  devices: auto
+  gradient_clip_val: 1.0
+  max_epochs: 10
+  precision: 16-mixed
+  strategy: ddp
+wm:
+  encoding:
+    action: 10
+  history_size: 3
+  num_preds: 1

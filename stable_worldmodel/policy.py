@@ -394,6 +394,7 @@ class WorldModelPolicy(BasePolicy):
                     sliced[k] = [v[i] for i in replan_idx]
                 else:
                     sliced[k] = v
+            sliced['_env_indices'] = np.asarray(replan_idx, dtype=np.int64)
 
             sliced_init = (
                 self._next_init[idx_tensor]

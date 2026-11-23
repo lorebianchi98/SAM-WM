@@ -1,0 +1,112 @@
+defaults:
+- _self_
+- launcher: local
+- data: ogb
+dump_object: true
+encoder_resnet9: false
+encoder_scale: tiny
+idm:
+  _target_: stable_worldmodel.wm.pldm.module.MLP
+  hidden_dim: 512
+  input_dim: ???
+  output_dim: ???
+img_size: 224
+loader:
+  batch_size: 128
+  drop_last: true
+  num_workers: ${num_workers}
+  persistent_workers: true
+  pin_memory: true
+  prefetch_factor: 3
+  shuffle: true
+loss:
+  cov:
+    enabled: true
+    weight: 12.0
+  cov_t:
+    enabled: true
+    weight: 0.0
+  idm:
+    enabled: true
+    weight: 0.0
+  sigreg:
+    enabled: true
+    weight: 0.0
+  std:
+    enabled: true
+    weight: 18
+  std_t:
+    enabled: true
+    weight: 0.7
+  temp_align:
+    enabled: true
+    weight: 0.2
+  temp_straight:
+    enabled: false
+    weight: 0.1
+model:
+  _target_: stable_worldmodel.wm.pldm.pldm.PLDM
+  action_encoder:
+    _target_: stable_worldmodel.wm.pldm.module.Embedder
+    emb_dim: ${wm.embed_dim}
+    input_dim: ???
+  encoder:
+    _target_: stable_pretraining.backbone.utils.vit_hf
+    image_size: ${img_size}
+    patch_size: ${patch_size}
+    pretrained: false
+    size: ${encoder_scale}
+    use_mask_token: false
+  pred_proj:
+    _target_: stable_worldmodel.wm.pldm.module.MLP
+    hidden_dim: 2048
+    input_dim: ${wm.embed_dim}
+    norm_fn:
+      _partial_: true
+      _target_: torch.nn.BatchNorm1d
+    output_dim: ${wm.embed_dim}
+  predictor:
+    _target_: stable_worldmodel.wm.pldm.module.Predictor
+    depth: 6
+    dim_head: 64
+    dropout: 0.1
+    emb_dropout: 0.0
+    heads: 16
+    hidden_dim: ${wm.embed_dim}
+    input_dim: ${wm.embed_dim}
+    mlp_dim: 2048
+    num_frames: ${wm.history_size}
+    output_dim: ${wm.embed_dim}
+  projector:
+    _target_: stable_worldmodel.wm.pldm.module.MLP
+    hidden_dim: 2048
+    input_dim: ${wm.embed_dim}
+    norm_fn:
+      _partial_: true
+      _target_: torch.nn.BatchNorm1d
+    output_dim: ${wm.embed_dim}
+num_workers: 6
+optimizer:
+  lr: 5e-5
+  type: AdamW
+  weight_decay: 1e-3
+output_model_name: cube_pldm_seed${seed}
+patch_size: 14
+projector_loss_weight: 1e-3
+seed: 42
+subdir: null
+train_split: 0.9
+train_value_function: false
+trainer:
+  accelerator: gpu
+  devices: auto
+  gradient_clip_val: 1.0
+  max_epochs: 10
+  precision: bf16
+wm:
+  embed_dim: 192
+  history_size: 3
+  num_preds: 1
+  type: lewm
+  use_proprio: false
+batch_size: 128

@@ -1,0 +1,86 @@
+defaults:
+- _self_
+- launcher: local
+- data: dmc
+dump_object: true
+embed_dim: 192
+encoder_resnet9: false
+encoder_scale: tiny
+img_size: 224
+loader:
+  batch_size: 128
+  drop_last: true
+  num_workers: ${num_workers}
+  persistent_workers: true
+  pin_memory: true
+  prefetch_factor: 3
+  shuffle: true
+loss:
+  sigreg:
+    kwargs:
+      knots: 17
+      num_proj: 1024
+    weight: 0.09
+model:
+  _target_: stable_worldmodel.wm.lewm.LeWM
+  action_encoder:
+    _target_: stable_worldmodel.wm.lewm.module.Embedder
+    emb_dim: ${embed_dim}
+    input_dim: ???
+  encoder:
+    _target_: stable_pretraining.backbone.utils.vit_hf
+    image_size: ${img_size}
+    patch_size: ${patch_size}
+    pretrained: false
+    size: ${encoder_scale}
+    use_mask_token: false
+  pred_proj:
+    _target_: stable_worldmodel.wm.lewm.module.MLP
+    hidden_dim: 2048
+    input_dim: ${embed_dim}
+    norm_fn:
+      _partial_: true
+      _target_: torch.nn.BatchNorm1d
+    output_dim: ${embed_dim}
+  predictor:
+    _target_: stable_worldmodel.wm.lewm.module.Predictor
+    depth: 6
+    dim_head: 64
+    dropout: 0.1
+    emb_dropout: 0.0
+    heads: 16
+    hidden_dim: ${embed_dim}
+    input_dim: ${embed_dim}
+    mlp_dim: 2048
+    num_frames: ${wm.history_size}
+    output_dim: ${embed_dim}
+  projector:
+    _target_: stable_worldmodel.wm.lewm.module.MLP
+    hidden_dim: 2048
+    input_dim: ${embed_dim}
+    norm_fn:
+      _partial_: true
+      _target_: torch.nn.BatchNorm1d
+    output_dim: ${embed_dim}
+num_workers: 6
+optimizer:
+  lr: 5e-5
+  type: AdamW
+  weight_decay: 1e-3
+output_model_name: reacher_lewm_seed${seed}
+patch_size: 14
+projector_loss_weight: 1e-3
+seed: 42
+subdir: null
+train_split: 0.9
+train_value_function: false
+trainer:
+  accelerator: gpu
+  devices: auto
+  gradient_clip_val: 1.0
+  max_epochs: 10
+  precision: bf16
+wm:
+  history_size: 3
+  num_preds: 1
+batch_size: 128

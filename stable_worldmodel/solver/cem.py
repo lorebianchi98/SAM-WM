@@ -47,7 +47,7 @@ class CEMSolver:
         self.n_steps = n_steps
         self.topk = topk
         self.device = device
-        self.torch_gen = torch.Generator(device=device).manual_seed(seed)
+        self.seed = seed
         self.callbacks = list(callbacks) if callbacks else []
         try:
             self._dtype = next(model.parameters()).dtype
@@ -153,6 +153,14 @@ class CEMSolver:
             end_idx = min(start_idx + self.batch_size, total_envs)
             current_bs = end_idx - start_idx
 
+            # Batch boundaries must not change candidate sampling.  Giving
+            # every environment an identical seeded generator keeps
+            # batch_size=1 equivalent to batch_size=n_envs.
+            candidate_gens = [
+                torch.Generator(device=self.device).manual_seed(self.seed)
+                for _ in range(current_bs)
+            ]
+
             # Slice Distribution Parameters for current batch
             batch_mean = mean[start_idx:end_idx]
             batch_var = var[start_idx:end_idx]
@@ -188,15 +196,24 @@ class CEMSolver:
 
             for step in range(self.n_steps):
                 # Sample action sequences: (Batch, Num_Samples, Horizon, Dim)
-                candidates = torch.randn(
-                    current_bs,
-                    self.num_samples,
-                    self.horizon,
-                    self.action_dim,
-                    generator=self.torch_gen,
-                    device=self.device,
-                    dtype=self.dtype,
-                )
+                # Generate each environment independently with the same seeded
+                # layout.  Drawing a (B, N, ...) tensor changes RNG strides and
+                # makes results depend on batch_size; independent draws keep
+                # each environment reproducible regardless of batching.
+                candidate_envs = []
+                for env_gen in candidate_gens:
+                    candidate_envs.append(
+                        torch.randn(
+                            1,
+                            self.num_samples,
+                            self.horizon,
+                            self.action_dim,
+                            generator=env_gen,
+                            device=self.device,
+                            dtype=self.dtype,
+                        )
+                    )
+                candidates = torch.cat(candidate_envs, dim=0)
 
                 # Scale and shift: (Batch, N, H, D) * (Batch, 1, H, D) + (Batch, 1, H, D)
                 candidates = candidates * batch_var.unsqueeze(

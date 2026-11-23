@@ -11,6 +11,7 @@ from stable_worldmodel.utils import HF_BASE_URL
 from stable_worldmodel.data import get_cache_dir, ensure_dir_exists
 
 
+
 def save_pretrained(
     model: torch.nn.Module,
     run_name: str,
@@ -28,7 +29,7 @@ def save_pretrained(
     torch.save(model.state_dict(), checkpoint_path)
 
     if config is None:
-        logging.warning('No config! Loading will have to be done manually.')
+        logger.warning('No config! Loading will have to be done manually.')
         return
 
     if config_key is not None and config_key in config:
@@ -36,14 +37,14 @@ def save_pretrained(
 
     config_path = ckpt_dir / 'config.json'
 
-    config = OmegaConf.to_container(config, resolve=True)
+    if OmegaConf.is_config(config):
+        config = OmegaConf.to_container(config, resolve=True)
     with open(config_path, 'w') as f:
         json.dump(config, f, indent=2)
 
     logging.info(f'📦📦📦 Model saved to {checkpoint_path} 📦📦📦')
 
     return
-
 
 def load_pretrained(
     name: str,
@@ -93,9 +94,31 @@ def load_pretrained(
             for part in parts[:-1]:
                 d = d.setdefault(part, {})
             d[parts[-1]] = value
+    try:
+        if 'output_model_name' in config and 'gcivl' in config['output_model_name']:
+            from scripts.train.gcivl import get_ivl_value_model, get_ivl_actor_model
 
-    model = instantiate(config)
-    model.load_state_dict(state_dict)
+            value_module = get_ivl_value_model(instantiate(config))
+            policy_module = get_ivl_actor_model(instantiate(config), value_module)
+
+            model = policy_module.model
+        elif 'output_model_name' in config and 'gciql' in config['output_model_name']:
+            from scripts.train.gciql import (
+                get_gciql_critics_model,
+                get_gciql_actor_model,
+            )
+
+            critics_module = get_gciql_critics_model((instantiate(config)))
+            model = get_gciql_actor_model((instantiate(config)), critics_module).model
+        else:
+            model = instantiate(config)
+        model.load_state_dict(state_dict)
+    except Exception as e:
+        logging.info(f"Error instantiating model: {e}")
+        logging.info("Falling back to instantiating with config['model'] if available.")
+        model = instantiate(config['model'])
+        model.load_state_dict(state_dict)
+
     return model
 
 

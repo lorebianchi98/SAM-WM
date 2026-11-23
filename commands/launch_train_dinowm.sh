@@ -12,10 +12,10 @@ declare -A job_map
 # ---------------------------------------------------------
 # CONFIGURE YOUR JOBS HERE
 # ---------------------------------------------------------
-job_map["prejepa_pusht_bs128_lr0.01"]="0,1"
-job_map["prejepa_reacher_bs128_lr0.01"]="2,3"
-job_map["prejepa_cube_bs128_lr0.01"]="4,5"
-job_map["prejepa_tworoom_bs128_lr0.01"]="6,7"
+job_map["prejepa_pusht"]="0,1"
+job_map["prejepa_reacher"]="2,3"
+job_map["prejepa_cube"]="4,5"
+job_map["prejepa_tworoom"]="6,7"
 # ---------------------------------------------------------
 
 # Environment name to activate

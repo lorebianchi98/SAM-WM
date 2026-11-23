@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import shutil
 from pathlib import Path
 
 import numpy as np
@@ -104,9 +103,9 @@ def save_panel_videos(
     from PIL import Image, ImageDraw, ImageFont
 
     video_dir = Path(video_dir)
-    if video_dir.exists():
-        shutil.rmtree(video_dir)
     video_dir.mkdir(parents=True, exist_ok=True)
+    for video_path in video_dir.glob('*.mp4'):
+        video_path.unlink()
 
     labels = list(panels)
     n_envs = len(panels[labels[0]])

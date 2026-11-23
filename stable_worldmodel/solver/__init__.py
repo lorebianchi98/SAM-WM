@@ -6,6 +6,7 @@ from .lagrangian import LagrangianSolver
 from .mppi import MPPISolver
 from .pgd import PGDSolver
 from .predictive_sampling import PredictiveSamplingSolver
+from .oracle import OracleMaskModel
 from .solver import Solver
 
 __all__ = [
@@ -18,4 +19,5 @@ __all__ = [
     'MPPISolver',
     'LagrangianSolver',
     'PredictiveSamplingSolver',
+    'OracleMaskModel',
 ]

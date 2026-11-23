@@ -3,7 +3,7 @@ import torch.nn.functional as F
 from einops import rearrange, repeat
 
 from transformers import Sam3VisionModel
-from stable_worldmodel.masks import Sam3Wrapper, calculate_giou
+from stable_worldmodel.masks import Sam3Wrapper, calculate_giou, calculate_iou
 from stable_worldmodel.masks.sam3 import post_process_instance_segmentation_nothresh
 class PreJEPA(torch.nn.Module):
     def __init__(
@@ -53,7 +53,7 @@ class PreJEPA(torch.nn.Module):
 
             with open(talk2dino_config_path, 'r') as f:
                 t2d_cfg = yaml.safe_load(f)['model']
-            asset_root = talk2dino_proj_asset_root or os.path.dirname(talk2dino_config_path)
+            asset_root = os.path.dirname(talk2dino_config_path)
             proj_config_path = os.path.join(asset_root, 'configs', f"{t2d_cfg['proj_class']}.yaml")
             proj_weights_path = os.path.join(asset_root, 'weights', f"{t2d_cfg['proj_name']}.pth")
 
@@ -119,8 +119,7 @@ class PreJEPA(torch.nn.Module):
         projected text embeddings -- no pixel decoding needed. Similarity maps are
         upsampled to the image resolution and returned as (E, 1, num_texts, H, W),
         matching the Sam3 contract. Binarized when a threshold is set: `bg_thresh`
-        (the wrapper's binarize_threshold) takes precedence; otherwise Lorenzo's
-        `discretize_mask` toggle falls back to 0.5. If neither, the raw map is kept.
+        (the wrapper's binarize_threshold) takes precedence
         """
         b, t, _, hw, c = info[target].shape
 
@@ -201,7 +200,8 @@ class PreJEPA(torch.nn.Module):
 
         elif hasattr(pixels_embed, 'last_hidden_state'):
             pixels_embed = pixels_embed.last_hidden_state
-            pixels_embed = pixels_embed[:, 1:, :]  # drop cls token
+            num_additional_tokens = 5 if 'with_registers' in str(self.backbone.__class__) else 1
+            pixels_embed = pixels_embed[:, num_additional_tokens:, :]  # drop cls token and additional tokens
         else:
             pixels_embed = pixels_embed.logits.unsqueeze(
                 1
@@ -488,7 +488,7 @@ class PreJEPA(torch.nn.Module):
         cost = 0.0
 
         if self.use_masks:
-            if self.cost_function == 'mask':
+            if self.cost_function in ('mask', 'mask_iou'):
                 if 'mask_preds' not in info_dict:
                     mask_preds = self.get_masks(info_dict, target='predicted_pixels_emb', discretize_mask=True)
                 else:
@@ -506,15 +506,26 @@ class PreJEPA(torch.nn.Module):
                     episodes_weights = torch.ones(flattened_goals.shape[:2])
 
                 for mask_pred, goal_mask, episode_weight in zip(mask_preds.squeeze(1), flattened_goals, episodes_weights):
-                    # Calculate GIoU for each text query and sum the results
+                    # Calculate the selected overlap cost for each text query and sum the results.
                     gious_x_text = []
                     for mask_pred_text, goal_mask_text, weight_text in zip(mask_pred, goal_mask, episode_weight):
-                        gious_x_text.append((1 - calculate_giou(mask_pred_text, goal_mask_text)) * weight_text)
+                        overlap = (
+                            calculate_iou(mask_pred_text, goal_mask_text)
+                            if self.cost_function == 'mask_iou'
+                            else calculate_giou(mask_pred_text, goal_mask_text)
+                        )
+                        gious_x_text.append((1 - overlap) * weight_text)
                     gious.append(sum(gious_x_text))
                 cost = torch.tensor(gious).reshape(info_dict['goal_mask'].shape[0], info_dict['goal_mask'].shape[1])
-            elif self.cost_function == 'mask_mse':
+            elif self.cost_function in ('mask_mse', 'mask_mse-thresh'):
                 if 'mask_preds' not in info_dict:
-                    mask_preds = self.get_masks(info_dict, target='predicted_pixels_emb', discretize_mask=False)
+                    mask_preds = self.get_masks(
+                        info_dict,
+                        target='predicted_pixels_emb',
+                        discretize_mask=self.cost_function == 'mask_mse-thresh',
+                    )
+                    if self.cost_function == 'mask_mse-thresh':
+                        mask_preds = mask_preds.float()
                 else:
                     mask_preds = info_dict['mask_preds']
                 cost = F.mse_loss(mask_preds.unsqueeze(0), info_dict['goal_mask'], reduction='none').mean(dim=tuple(range(2, len(mask_preds.shape) + 1)))

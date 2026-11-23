@@ -112,7 +112,7 @@ class Talk2DINOWrapper(torch.nn.Module):
         """Encode + project the text queries into DINO space (cached)."""
         import clip
 
-        templates = self._templates()
+        templates = ['{}']# self._templates()
         embs = []
         for classname in text:
             prompts = [t.format(classname) for t in templates]

@@ -1,29 +1,32 @@
-defaults:
-  - launcher: local
-  - solver: cem
-  - _self_
-
+cache_dir: null
+save_frames: false
+n_epoch: null
+solver:
+  _target_: stable_worldmodel.solver.CEMSolver
+  model: ???
+  batch_size: 1
+  num_samples: 300
+  var_scale: 1.0
+  n_steps: 30
+  topk: 30
+  device: cuda
+  seed: ${seed}
 world:
   env_name: swm/PushT-v1
   num_envs: ${eval.num_eval}
-  max_episode_steps: ??? # make sure it's >= eval_budget
-
+  max_episode_steps: ???
 dataset:
   stats: ${eval.dataset_name}
   keys_to_cache:
-    - action
-    - proprio
-    - state
-
+  - action
+  - proprio
+  - state
 seed: 42
-policy: random # ckpt name or random
-
+policy: random
 plan_config:
   horizon: 5
   receding_horizon: 5
-  action_block: 5 # frameskip
-
-# evaluation from dataset (replay expert trajectories)
+  action_block: 5
 eval:
   num_eval: 50
   goal_offset_steps: 25
@@ -31,45 +34,33 @@ eval:
   img_size: 224
   dataset_name: pusht_expert_train.h5
   callables:
-    # -- set state
-    - method: _set_state
-      args:
-        state:
-          value: state
-    # -- set goal state
-    - method: _set_goal_state
-      args:
-        goal_state:
-          value: goal_state
-
+  - method: _set_state
+    args:
+      state:
+        value: state
+  - method: _set_goal_state
+    args:
+      goal_state:
+        value: goal_state
 cost_function: mse
-mask_type: sam3  # 'sam3' (default) or 'talk2dino'
-threshold: 0.15
-mask_threshold: 0.4
+mask_type: sam3
+threshold: 0.06
+mask_threshold: 0.64
 weight_cost_strategy: area
 textual_query:
-  - "grey block"
-  - "blue circle"
-
-# Talk2DINO configuration (used when mask_type: talk2dino)
-# Masks are the cosine similarity between the WM's predicted DINO embeddings and
-# the CLIP text queries projected into DINO space by Talk2DINO's projection layer.
+- grey block
+- blue circle
 talk2dino_config:
-  config_path: scripts/plan/talk2dino_assets/talk2dino_dinov2s_pusht.yml  # model block gives proj_class/proj_name/clip_model_name
+  config_path: scripts/plan/talk2dino_assets/talk2dino_dinov2s.yml
   template_set: sub_imagenet_template
-  bg_thresh: null  # null -> raw similarity map into GIoU; float in [-1,1] -> binarize as (sim >= bg_thresh)
-  # Directory holding the projection assets: configs/<proj_class>.yaml + weights/<proj_name>.pth.
+  bg_thresh: 0.04
   proj_asset_root: scripts/plan/talk2dino_assets
-
 video_path: video
 output_dir: costs
 compile: false
 bf16: false
-
 output:
   filename: pusht_results.txt
-
 augmentations_inputs: false
 augmentations_goals: false
-
 rastered_masks_goals: false

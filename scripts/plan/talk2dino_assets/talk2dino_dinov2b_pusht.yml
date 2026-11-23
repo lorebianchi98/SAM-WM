@@ -1,0 +1,14 @@
+model:
+  model_name: dinov2_vitb14              # DINOv2 small ViT
+  clip_model_name: ViT-B/16              # CLIP text encoder
+  resize_dim: 224                         # Input resolution (matches PushT eval)
+
+  proj_class: vits_mlp_infonce           # Projection config (adjust to match your weights)
+  proj_model: ProjectionLayer            # Projection layer class
+  proj_name: vits_mlp_infonce           # Projection weights file name
+
+  # Optional parameters
+  keep_cls: false
+  keep_end_seq: false
+  use_avg_text_token: false
+  type: DINOText

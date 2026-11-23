@@ -9,6 +9,7 @@ from pathlib import Path
 
 import hydra
 import numpy as np
+from PIL import Image
 import stable_pretraining as spt
 import torch
 from omegaconf import DictConfig, OmegaConf
@@ -466,11 +467,15 @@ def run(cfg: DictConfig):
                 frame = overlay_fn(frame, ep_masks[mask_idx].numpy())
             frames.append(frame)
 
-        ep_path = video_path / (
-            f'episode_{idx}.mp4'
-        )
+        ep_path = video_path / f'episode_{idx}.mp4'
         ep_path.parent.mkdir(parents=True, exist_ok=True)
         save_video(ep_path, frames, fps=15)
+
+        ep_frames_path = video_path / f'episode_{idx}'
+        ep_frames_path.mkdir(parents=True, exist_ok=True)
+        for frame_idx, frame in enumerate(frames):
+            frame_path = ep_frames_path / f'frame_{frame_idx}.png'
+            Image.fromarray(frame).save(frame_path)
 
     print(f'[trace] saved mask trace to {trace_path.resolve()}')
     print(f'[trace] saved videos to {video_path.resolve()}')

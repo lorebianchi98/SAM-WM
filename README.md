@@ -96,37 +96,73 @@ Place downloaded datasets under `STABLEWM_HOME` (or set `STABLEWM_HOME` to your 
 
 ## Training
 
-- Use `scripts/train/prejepa_sam3.py` and pass `--config-name` to select a Hydra config.
-- Example configs live in the repository's config folders (search `config` under `train/` and `plan/`).
+- To run training for 3 seeds across every environment, use:
+
+  ```bash
+  ./commands/launch_train_sam-wm.sh
+  ```
+
+- To launch a single training job, use `scripts/train/prejepa_sam3.py` with the desired Hydra config. For example, to train Push-T:
+
+  ```bash
+  CUDA_VISIBLE_DEVICES=0 python scripts/train/prejepa_sam3.py --config-name prejepa_sam3_pusht
+  ```
+
+- Example configs are available in `scripts/train/config`.
+
 
 ## Evaluation & Planning
 
-- Evaluation launch scripts: launch `commands/launch_eval_sam3.sh` to evaluate SAM3-WM on every environment.
-- Planning tools and evaluation helpers are under `plan/` and `scripts/` (e.g., `plan/eval_wm.py`).
+- To evaluate SAM-WM across every environment, run:
+
+  ```bash
+  ./commands/launch_eval_sam-wm.sh
+  ```
+
+- To run a single Push-T evaluation, for example:
+
+  ```bash
+  CUDA_VISIBLE_DEVICES=0 python scripts/plan/eval_wm.py \
+    policy=pusht_sam3_psmall_seed0 cost_function=mask \
+    solver.n_steps=30 solver.num_samples=300 solver.batch_size=1 \
+    eval.num_eval=50 video_path=video/pusht_sam3-wm \
+    save_frames=true --config-name pusht
+  ```
 
 
-## Results 
 
-Task success rates (%) across 50 evaluation episodes. Goal-image baselines (Image) use full RGB targets; mask rows report mask-conditioned performance. Bold indicates the best mask-conditioned score per column.
+- To run oracle MPC, use `commands/launch_eval_oracle.sh`. Oracle MPC evaluates the mask-cost planner with a perfect predictor: it simulates the sampled actions in the environment and uses the real masks instead of decoding predicted masks.
 
-| Model | Goal Type | Two-Room | Reacher | Push-T | OGBench-Cube |
-|---|---:|---:|---:|---:|---:|
-| Random | -- | 0 | 10 | 2 | 50 |
+Note: the configurations in `scripts/plan/config` contain SAM3 threshold values optimized on the validation set using:
+  ```bash
+  ./commands/launch_calculate_val_miou.sh
+  ```
+
+
+
+
+## Results
+
+Comparison against JEPA world models. Task success rates (%) across 50 evaluation episodes (mean $\pm$ std over 3 seeds). Goal-image methods receive complete images of the desired final scene and use a richer goal specification. Red down arrows (↓) denote goal-image methods that achieve equal or worse performance compared to SAM-WM (mask-based). Bold values indicate the best performance among methods using mask-based goals.
+
+| Model | Goal Type | Two-Room* | Reacher | Push-T | Cube |
+|---|:---:|:---:|:---:|:---:|:---:|
+| Random | -- | $0 \pm 0$ | $10 \pm 5$ | $2 \pm 2$ | $48 \pm 3$ |
+| Oracle | Masks | $74 \pm 2$ | $62 \pm 1$ | $84 \pm 2$ | $66 \pm 2$ |
 | | | | | | |
-| *DINO-WM* | Image | 100 | 79 | 92 | 86 |
-| *PLDM* | Image | 97 | 78 | 78 | 65 |
-| *LeWM* | Image | 87 | 86 | 96 | 74 |
+| *DINO-WM* | Image | $63 \pm 1$ ↓ | $79 \pm 6$ | $74 \pm 4$ ↓ | $86 \pm 5$ |
+| *LeWM* | Image | $16 \pm 2$ ↓ | $86 \pm 5$ | $96 \pm 3$ | $74 \pm 3$ |
+| *PLDM* | Image | $51 \pm 2$ ↓ | $78 \pm 6$ | $78 \pm 5$ ↓ | $65 \pm 3$ |
 | | | | | | |
-| DINO-WM mask-based | Masks | **76** | 28 | 50 | 44 |
-| SAM3-WM (Ours) | Masks | **76** | **58** | **88** | **62** |
+| DINO-WM | Masks | $45 \pm 2$ | $22 \pm 5$ | $19 \pm 1$ | $42 \pm 2$ |
+| **SAM-WM (Ours)** | Masks | **$74 \pm 2$** | **$61 \pm 2$** | **$83 \pm 2$** | **$64 \pm 2$** |
+
+<small><i>*Evaluated under an extended horizon (100-step offset, 150-step budget) and reproduced by us; all other benchmark results are taken from Maes et al. (2026).</i></small>
 
 Notes:
-- Image Baselines: Represent the empirical upper bound, as these models rely on complete, privileged RGB goal images of the final scene.
-
-- DINO-WM (mask-based): An adaptation of DINO-WM that receives a flat, black-and-white rendered image of the binary destination mask instead of a full RGB photo.
-
-- SAM3-WM: Outperforms mask-based feature matching across all manipulation tasks, reaching up to 88% on Push-T and 62% on OGBench-Cube without ever seeing a target image.
-
+- **Oracle Planner**: Evaluates mask-guided MPC using ground-truth simulator rollouts and ground-truth segmentation masks, serving as an empirical upper bound for the planning objective.
+- **Image Baselines**: Rely on complete RGB goal images of the final scene. Notice that on Two-Room, SAM-WM outperforms all goal-image methods, and on Push-T it outperforms DINO-WM and PLDM without seeing a target image.
+- **DINO-WM (mask-based)**: An adaptation of DINO-WM that receives a flat, binary destination mask canvas encoded via DINOv2 instead of a full RGB photo.
 
 ## Visualize Mask predictions
 
@@ -159,8 +195,8 @@ Run a single environment (edit `policy` or config name as needed):
 
 ```bash
 CUDA_VISIBLE_DEVICES=0 python scripts/ablations/predict_masks.py \
-  policy=pusht_sam3_psmall_bs128_lr0.01 eval.num_eval=50 \
-  video_path=assets/masks_pusht --config-name pusht
+  policy=pusht_sam3_psmall_seed0 eval.num_eval=50 \
+  video_path=video/masks_pusht --config-name pusht
 ```
 
 Run all environment visualizations with the launcher:

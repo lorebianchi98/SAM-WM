@@ -1,59 +1,62 @@
-defaults:
-  - launcher: local
-  - solver: cem
-  - _self_
-
+cache_dir: null
+save_frames: false
+n_epoch: null
+solver:
+  _target_: stable_worldmodel.solver.CEMSolver
+  model: ???
+  batch_size: 1
+  num_samples: 300
+  var_scale: 1.0
+  n_steps: 30
+  topk: 30
+  device: cuda
+  seed: ${seed}
 world:
   env_name: swm/TwoRoom-v1
   num_envs: ${eval.num_eval}
-  max_episode_steps: ??? # make sure it's >= eval_budget
+  max_episode_steps: ???
 seed: 42
-policy: gcbc # ckpt name or random
-
+policy: random
 plan_config:
   horizon: 5
   receding_horizon: 5
-  action_block: 5 # frameskip
-
+  action_block: 5
 dataset:
   stats: ${eval.dataset_name}
   keys_to_cache:
-    - action
-    - proprio
-
+  - action
+  - proprio
+mask_type: sam3
 cost_function: mse
-threshold: 0.15
-mask_threshold: 0.4
+threshold: 0.16
+mask_threshold: 0.66
 weight_cost_strategy: area
 textual_query:
-  - "red circle"
+- red circle
+talk2dino_config:
+  config_path: scripts/plan/talk2dino_assets/talk2dino_dinov2s.yml
+  template_set: sub_imagenet_template
+  bg_thresh: -0.2
+  proj_asset_root: scripts/plan/talk2dino_assets
 output_dir: costs
 video_path: video
-
 augmentations_inputs: false
 augmentations_goals: false
-
-# evaluation from dataset (replay expert trajectories)
 eval:
   num_eval: 50
-  goal_offset_steps: 100
-  eval_budget: 150
+  goal_offset_steps: 25
+  eval_budget: 50
   img_size: 224
   dataset_name: tworoom.h5
   callables:
-    # -- set state
-    - method: _set_state
-      args:
-        state:
-          value: pos_agent
-    # -- set goal state
-    - method: _set_goal_state
-      args:
-        goal_state:
-          value: goal_pos_agent
-
+  - method: _set_state
+    args:
+      state:
+        value: pos_agent
+  - method: _set_goal_state
+    args:
+      goal_state:
+        value: goal_pos_agent
 output:
   filename: tworoom_results.txt
-
-
 rastered_masks_goals: false
