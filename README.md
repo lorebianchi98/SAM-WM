@@ -143,16 +143,16 @@ Note: the configurations in `scripts/plan/config` contain SAM3 threshold values 
 
 ## Results
 
-Comparison against JEPA world models. Task success rates (%) across 50 evaluation episodes (mean $\pm$ std over 3 seeds). Goal-image methods receive complete images of the desired final scene and use a richer goal specification. Red down arrows (↓) denote goal-image methods that achieve equal or worse performance compared to SAM-WM (mask-based). Bold values indicate the best performance among methods using mask-based goals.
+Comparison against JEPA world models. Task success rates (%) across 50 evaluation episodes (mean $\pm$ std over 3 seeds). Goal-image methods receive complete images of the desired final scene and use a richer goal specification. Red down arrows (🔻) denote goal-image methods that achieve equal or worse performance compared to SAM-WM (mask-based). Bold values indicate the best performance among methods using mask-based goals.
 
 | Model | Goal Type | Two-Room* | Reacher | Push-T | Cube |
 |---|:---:|:---:|:---:|:---:|:---:|
 | Random | -- | $0 \pm 0$ | $10 \pm 5$ | $2 \pm 2$ | $48 \pm 3$ |
 | Oracle | Masks | $74 \pm 2$ | $62 \pm 1$ | $84 \pm 2$ | $66 \pm 2$ |
 | | | | | | |
-| *DINO-WM* | Image | $63 \pm 1$ ↓ | $79 \pm 6$ | $74 \pm 4$ ↓ | $86 \pm 5$ |
-| *LeWM* | Image | $16 \pm 2$ ↓ | $86 \pm 5$ | $96 \pm 3$ | $74 \pm 3$ |
-| *PLDM* | Image | $51 \pm 2$ ↓ | $78 \pm 6$ | $78 \pm 5$ ↓ | $65 \pm 3$ |
+| *DINO-WM* | Image | $63 \pm 1$ 🔻 | $79 \pm 6$ | $74 \pm 4$ 🔻 | $86 \pm 5$ |
+| *LeWM* | Image | $16 \pm 2$ 🔻 | $86 \pm 5$ | $96 \pm 3$ | $74 \pm 3$ |
+| *PLDM* | Image | $51 \pm 2$ 🔻 | $78 \pm 6$ | $78 \pm 5$ 🔻 | $65 \pm 3$ |
 | | | | | | |
 | DINO-WM | Masks | $45 \pm 2$ | $22 \pm 5$ | $19 \pm 1$ | $42 \pm 2$ |
 | **SAM-WM (Ours)** | Masks | **$74 \pm 2$** | **$61 \pm 2$** | **$83 \pm 2$** | **$64 \pm 2$** |
