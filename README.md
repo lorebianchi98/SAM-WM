@@ -1,6 +1,6 @@
-# SAM3-WM: World Models on Segmentation Features enable Mask-Guided Planning
+# World Models on Segmentation Features enable Mask-Guided Planning
 
-SAM3-WM extends the [stable-worldmodel](https://github.com/galilai-group/stable-worldmodel) project by adding action-conditioned transition-model
+SAM-WM extends the [stable-worldmodel](https://github.com/galilai-group/stable-worldmodel) project by adding action-conditioned transition-model
 training over frozen Segment Anything 3 (SAM3) features. This enables zero-shot model-predictive
 control (MPC) using natural-language goals and binary destination masks instead of target RGB images.
 <table align="center">
