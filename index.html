@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="title" content="World Models on Segmentation Features enable Mask-Guided Planning">
+  <meta name="description" content="SAM-WM enables mask-guided model-predictive control using frozen SAM3 features and language-grounded destination masks.">
+  <meta name="keywords" content="world models, SAM3, mask-guided planning, model-predictive control, robotics, computer vision">
+  <meta name="author" content="Lorenzo Bianchi, Luca Barsellotti, Fabrizio Falchi, Nicola Messina, Fabio Carrara">
+  <meta name="citation_title" content="World Models on Segmentation Features enable Mask-Guided Planning">
+  <meta name="citation_author" content="Bianchi, Lorenzo">
+  <meta name="citation_author" content="Barsellotti, Luca">
+  <meta name="citation_author" content="Falchi, Fabrizio">
+  <meta name="citation_author" content="Messina, Nicola">
+  <meta name="citation_author" content="Carrara, Fabio">
+
+  <title>World Models on Segmentation Features enable Mask-Guided Planning</title>
+
+  <link rel="icon" type="image/x-icon" href="static/images/favicon.svg">
+  <link rel="stylesheet" href="static/css/bulma.min.css">
+  <link rel="stylesheet" href="static/css/index.css">
+  <link rel="preload" href="static/css/fontawesome.all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <link rel="preload" href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript>
+    <link rel="stylesheet" href="static/css/fontawesome.all.min.css">
+  </noscript>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- MathJax for rendering LaTeX math formulas -->
+  <script>
+    window.MathJax = {
+      tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] }
+    };
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+  <button class="scroll-to-top" onclick="scrollToTop()" title="Scroll to top" aria-label="Scroll to top">
+    <i class="fas fa-chevron-up"></i>
+  </button>
+
+  <aside class="section-sidebar" aria-label="Page sections">
+    <nav>
+      <a href="#abstract">Overview</a>
+      <a href="#method">Method</a>
+      <a href="#results">Results</a>
+      <a href="#cost-function">Cost function</a>
+      <a href="#mask-predictions">Mask Predictions</a>
+      <a href="#sam3-dinov2">SAM3 vs. DINOv2</a>
+      <a href="#references">References</a>
+      <a href="#bibtex">BibTeX</a>
+    </nav>
+  </aside>
+
+  <main id="main-content">
+    <section class="hero" id="overview">
+      <div class="hero-body">
+        <div class="container is-max-desktop">
+          <div class="has-text-centered">
+            <h1 class="title is-1 publication-title">World Models on Segmentation Features enable Mask-Guided Planning</h1>
+            <div class="is-size-5 publication-authors">
+              <span class="author-block"><a href="https://lorebianchi98.github.io/">Lorenzo Bianchi</a></span>,
+              <span class="author-block"><a href="https://lucabarsellotti.github.io/">Luca Barsellotti</a></span>,
+              <span class="author-block"><a href="https://fabriziofalchi.it">Fabrizio Falchi</a></span>,
+              <span class="author-block"><a href="https://www.linkedin.com/in/nicola-messina-a33848164/">Nicola Messina</a></span>,
+              <span class="author-block"><a href="https://www.linkedin.com/in/fabio-carrara-b28a2b111/">Fabio Carrara</a></span>
+            </div>
+            <div class="is-size-5 publication-authors">
+              <span class="author-block">CNR-ISTI</span>
+            </div>
+
+            <div class="publication-links">
+              <span class="link-block">
+                <a href="https://github.com/lorebianchi98/SAM-WM" class="external-link button is-normal is-rounded is-dark" target="_blank" rel="noopener noreferrer">
+                  <span class="icon"><i class="fab fa-github"></i></span>
+                  <span>Code</span>
+                </a>
+              </span>
+              <span class="link-block">
+                <a href="#" class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon"><i class="ai ai-arxiv"></i></span>
+                  <span>arXiv</span>
+                </a>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section hero is-light" id="abstract">
+      <div class="container is-max-desktop">
+        <div class="columns is-centered has-text-centered">
+          <div class="column is-four-fifth">
+            <h2 class="title is-3">Overview</h2>
+            <div class="content has-text-justified">
+              <p>
+                Joint Embedding Predictive Architectures (JEPAs) (<a class="citation-link" href="#ref-lecun-2022">LeCun, 2022</a>) typically plan through Model Predictive Control (MPC) by unrolling future states and minimizing the latent feature distance to an encoded goal image. However, requiring a pixel-perfect photograph of the finished task in advance may be impractical in real-world scenarios.
+              </p>
+              <p>
+                Instead of matching full-scene image representations, <strong>SAM-WM</strong> performs MPC directly against language-queried destination masks. Built on top of a frozen Segment Anything 3 (SAM3) (<a class="citation-link" href="#ref-carion-2026">Carion et al., 2026</a>) backbone, it forecasts future visual dynamics, decodes the target object's mask along candidate action sequences, and guides trajectory optimization via a distance-aware geometric cost (gIoU). Across four diverse navigation and manipulation benchmarks, SAM-WM substantially outperforms naive mask-adapted baselines and rivals image-conditioned world models without ever observing a target photograph.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="hero teaser" aria-label="Teaser">
+        <div class="container is-max-desktop">
+          <div class="hero-body">
+            <div class="publication-teaser-grid">
+              <figure class="environment-example" data-environment="pusht" data-label="Push-T" data-directory="gifs_plans" data-example-type="planning">
+                <div class="teaser-image-wrap">
+                  <img src="static/images/gifs_plans/pusht/example_0.gif" alt="Push-T planning example 1" loading="lazy">
+                  <div class="teaser-example-navigation">
+                    <button class="button is-small is-dark previous-example" type="button" aria-label="Show previous Push-T example">&larr;</button>
+                    <button class="button is-small is-dark next-example" type="button" aria-label="Show next Push-T example">&rarr;</button>
+                  </div>
+                </div>
+                <figcaption>Push-T</figcaption>
+              </figure>
+              <figure class="environment-example" data-environment="tworoom" data-label="Two-Room" data-directory="gifs_plans" data-example-type="planning">
+                <div class="teaser-image-wrap">
+                  <img src="static/images/gifs_plans/tworoom/example_0.gif" alt="Two-Room planning example 1" loading="lazy">
+                  <div class="teaser-example-navigation">
+                    <button class="button is-small is-dark previous-example" type="button" aria-label="Show previous Two-Room example">&larr;</button>
+                    <button class="button is-small is-dark next-example" type="button" aria-label="Show next Two-Room example">&rarr;</button>
+                  </div>
+                </div>
+                <figcaption>Two-Room</figcaption>
+              </figure>
+              <figure class="environment-example" data-environment="reacher" data-label="Reacher" data-directory="gifs_plans" data-example-type="planning">
+                <div class="teaser-image-wrap">
+                  <img src="static/images/gifs_plans/reacher/example_0.gif" alt="Reacher planning example 1" loading="lazy">
+                  <div class="teaser-example-navigation">
+                    <button class="button is-small is-dark previous-example" type="button" aria-label="Show previous Reacher example">&larr;</button>
+                    <button class="button is-small is-dark next-example" type="button" aria-label="Show next Reacher example">&rarr;</button>
+                  </div>
+                </div>
+                <figcaption>Reacher</figcaption>
+              </figure>
+              <figure class="environment-example" data-environment="cube" data-label="OGBench-Cube" data-directory="gifs_plans" data-example-type="planning">
+                <div class="teaser-image-wrap">
+                  <img src="static/images/gifs_plans/cube/example_0.gif" alt="OGBench-Cube planning example 1" loading="lazy">
+                  <div class="teaser-example-navigation">
+                    <button class="button is-small is-dark previous-example" type="button" aria-label="Show previous OGBench-Cube example">&larr;</button>
+                    <button class="button is-small is-dark next-example" type="button" aria-label="Show next OGBench-Cube example">&rarr;</button>
+                  </div>
+                </div>
+                <figcaption>OGBench-Cube</figcaption>
+              </figure>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="method">
+      <div class="container is-max-desktop">
+        <h2 class="title is-3 has-text-centered">Method</h2>
+        <div class="content has-text-justified">
+          <p>
+            SAM-WM reformulates visual control around semantic geometry: instead of full goal photographs, tasks are defined using a simple natural-language object description (e.g., <em>"the blue dot"</em>) and a 2D destination mask. The framework leverages a frozen Segment Anything 3 (SAM3) backbone paired with an action-conditioned dynamics predictor, which is trained purely offline on unannotated environment episodes to forecast future SAM3 visual features from candidate actions without requiring manual labels or decoder evaluations during training.
+          </p>
+          <p>
+            At each decision step, online trajectory optimization proceeds in a receding-horizon Model Predictive Control (MPC) loop via the Cross-Entropy Method (CEM):
+          </p>
+          <ol>
+            <li>
+              <strong>Sample Actions:</strong> CEM generates a set of candidate action sequences across the planning horizon.
+            </li>
+            <li>
+              <strong>Rollout SAM3 Features:</strong> The transition model takes the sampled actions and autoregressively forecasts the future dense SAM3 feature maps step by step.
+            </li>
+            <li>
+              <strong>Decode Target Mask:</strong> Guided by the text prompt, the frozen SAM3 mask decoder extracts the target object's binary mask directly from the terminal predicted features.
+            </li>
+            <li>
+              <strong>Score with Geometric Cost:</strong> The candidate trajectory is scored by computing the Generalized IoU (gIoU) distance between the decoded mask and the destination mask.
+            </li>
+          </ol>
+          <p>
+            The optimizer refines the sampled distribution over multiple iterations, executes the first action of the best-performing trajectory, and repeats the process from the newly observed visual state.
+          </p>
+        </div>
+        <figure class="has-text-centered method-figure-container">
+          <img class="method-figure" src="static/images/arch.jpg"
+               alt="Architecture of SAM-WM" loading="lazy">
+        </figure>
+      </div>
+    </section>
+
+    <section class="section" id="results">
+      <div class="container is-max-desktop">
+        <h2 class="title is-3 has-text-centered">Results</h2>
+        <div class="content has-text-justified">
+          <p>
+            Conventional JEPA world models, including DINO-WM (<a class="citation-link" href="#ref-zhou-2025">Zhou et al., 2025</a>),
+            LeWM (<a class="citation-link" href="#ref-maes-2026">Maes et al., 2026</a>), and PLDM
+            (<a class="citation-link" href="#ref-sobal-2025">Sobal et al., 2025</a>), plan in latent space
+            by matching predicted features to an encoded goal image. In real-world robotic scenarios, however,
+            having access to a pixel-perfect target image in advance is often unfeasible, whereas a user
+            can far more conveniently sketch a destination mask and supply a textual description of the object.
+            SAM-WM instead predicts dense SAM3 features and decodes the language-queried object mask before
+            optimizing geometric alignment with a binary destination mask.
+            To establish an empirical upper bound for zero-order mask optimization, an Oracle Planner evaluates
+            candidate actions directly within the environment simulator paired with ground-truth segmentations.
+            Finally, to probe whether existing latent world models can handle non-image targets without dedicated
+            decoders, a mask-based DINO-WM baseline feeds binary destination canvases directly into a frozen DINOv2
+            backbone for latent-space matching (<a class="citation-link" href="#ref-oquab-2024">Oquab et al., 2024</a>).
+          </p>
+        </div>
+
+<div class="table-container">
+          <table class="table is-bordered results-table">
+            <thead>
+              <tr style="border-bottom: 2px solid #363636;">
+                <th>Model</th>
+                <th>Goal</th>
+                <th>Two-Room*</th>
+                <th>Reacher</th>
+                <th>Push-T</th>
+                <th>Cube</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Random</td>
+                <td>—</td>
+                <td>0 ± 0</td>
+                <td>10 ± 5</td>
+                <td>2 ± 2</td>
+                <td>48 ± 3</td>
+              </tr>
+              <tr style="border-bottom: 2px solid #b5b5b5;">
+                <td>Oracle</td>
+                <td class="goal-mask">Masks</td>
+                <td>74 ± 2</td>
+                <td>62 ± 1</td>
+                <td>84 ± 2</td>
+                <td>66 ± 2</td>
+              </tr>
+              <tr>
+                <td>DINO-WM</td>
+                <td class="goal-image">Image</td>
+                <td>63 ± 1 <span style="color: #e53e3e; font-weight: bold;">&darr;</span></td>
+                <td>79 ± 6</td>
+                <td>74 ± 4 <span style="color: #e53e3e; font-weight: bold;">&darr;</span></td>
+                <td>86 ± 5</td>
+              </tr>
+              <tr>
+                <td>LeWM</td>
+                <td class="goal-image">Image</td>
+                <td>16 ± 2 <span style="color: #e53e3e; font-weight: bold;">&darr;</span></td>
+                <td>86 ± 5</td>
+                <td>96 ± 3</td>
+                <td>74 ± 3</td>
+              </tr>
+              <tr style="border-bottom: 2px solid #b5b5b5;">
+                <td>PLDM</td>
+                <td class="goal-image">Image</td>
+                <td>51 ± 2 <span style="color: #e53e3e; font-weight: bold;">&darr;</span></td>
+                <td>78 ± 6</td>
+                <td>78 ± 5 <span style="color: #e53e3e; font-weight: bold;">&darr;</span></td>
+                <td>65 ± 3</td>
+              </tr>
+              <tr>
+                <td>DINO-WM</td>
+                <td class="goal-mask">Masks</td>
+                <td>45 ± 2</td>
+                <td>22 ± 5</td>
+                <td>19 ± 1</td>
+                <td>42 ± 2</td>
+              </tr>
+              <tr style="background-color: #f0fdf4; border-bottom: 2px solid #363636;">
+                <td><strong>SAM-WM (ours)</strong></td>
+                <td class="goal-mask">Masks</td>
+                <td><strong>74 ± 2</strong></td>
+                <td><strong>61 ± 2</strong></td>
+                <td><strong>83 ± 2</strong></td>
+                <td><strong>64 ± 2</strong></td>
+              </tr>
+            </tbody>
+          </table>
+          <p class="is-size-7 has-text-grey mt-2">
+            *Evaluated under an extended horizon (100-step offset, 150-step budget) to prevent short-horizon saturation. </p>
+          <p class="is-size-7 has-text-grey">
+            Red down arrows (<span style="color: #e53e3e; font-weight: bold;">&darr;</span>) indicate image-based baselines that perform equal to or worse than SAM-WM.
+          </p>  
+        <div class="content has-text-justified content-spaced">
+          <p>
+            Across all benchmarks, SAM-WM decisively outperforms the mask-adapted DINO-WM baseline—surpassing it by up to 64 percentage points on complex manipulation tasks like Push-T (83% vs. 19%). Remarkably, SAM-WM closes the performance gap to the Oracle Planner to within just 1–2 percentage points across the entire evaluation suite. This near-parity confirms that dense SAM3 representations provide an effective substrate both for modeling multi-step forward dynamics and for decoding high-fidelity object masks during closed-loop control. Moreover, in environments featuring long-range horizons or distant target configurations—such as Two-Room and Push-T—SAM-WM systematically exceeds several full-image JEPA models (e.g., outperforming LeWM, PLDM, and DINO-WM on Two-Room), demonstrating that distance-aware geometric guidance over destination masks can in some cases drive trajectory optimization more reliably than latent visual matching, even when competing approaches exploit complete RGB goal scenes.
+          </p>
+        </div>
+      </div>
+    </section>
+
+<section class="section hero is-light" id="cost-function">
+      <div class="container is-max-desktop">
+        <h2 class="title is-3 has-text-centered">Cost Function</h2>
+        <div class="content has-text-justified">
+          <p>
+            Standard mask overlap objectives provide weak or no gradient when predicted and target masks
+            do not intersect. Pixel MSE is also poorly suited to spatial alignment because the large background
+            area dominates the error.
+          </p>
+          <div class="equation has-text-centered my-4 is-size-5">
+            $$\text{gIoU}(A, B) = \frac{|A \cap B|}{|A \cup B|} - \frac{|D(A, B) \setminus (A \cup B)|}{|D(A, B)|}$$
+          </div>
+          <p>
+            Here, \(D(A, B)\) represents the convex hull enclosing the union of the two masks. The additional
+            convex-hull term penalizes unoccupied space between disjoint masks, providing a smooth,
+            distance-aware optimization signal.
+          </p>
+        </div>
+
+        <div class="table-container">
+          <table class="table is-striped is-bordered results-table">
+            <thead>
+              <tr><th>Cost function</th><th>Two-Room</th><th>Reacher</th><th>Push-T</th><th>Cube</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>MSE</td><td>7 ± 1</td><td>32 ± 4</td><td>12 ± 2</td><td>52 ± 1</td></tr>
+              <tr><td>IoU</td><td>22 ± 0</td><td><strong>68 ± 0</strong></td><td>52 ± 0</td><td>63 ± 2</td></tr>
+              <tr><td><strong>gIoU</strong></td><td><strong>74 ± 2</strong></td><td>62 ± 1</td><td><strong>84 ± 2</strong></td><td><strong>66 ± 2</strong></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="content has-text-justified content-spaced-compact">
+          <p>
+            gIoU is the most versatile objective across long-horizon navigation and contact-rich manipulation.
+            While standard IoU is sharper in Reacher—where the arm remains close to the workspace, the target configuration is consistently within the MPC planning horizon, and exact thin-link overlap is essential—gIoU remains decisive in domains where candidate trajectories initially have zero overlap with the target.
+          </p>
+        </div>
+      </div>
+    </section>
+
+
+    <section class="section hero is-light" id="mask-predictions">
+      <div class="container is-max-desktop">
+        <h2 class="title is-3 has-text-centered">Mask Predictions</h2>
+
+        <div class="publication-teaser-grid prediction-teaser-grid">
+          <figure class="environment-example" data-environment="pusht" data-label="Push-T" data-directory="gifs_preds" data-example-type="prediction">
+            <div class="teaser-image-wrap">
+              <img src="static/images/gifs_preds/pusht/example_0.gif" alt="Push-T prediction example 1" loading="lazy">
+              <div class="teaser-example-navigation">
+                <button class="button is-small is-dark previous-example" type="button" aria-label="Show previous Push-T prediction example">&larr;</button>
+                <button class="button is-small is-dark next-example" type="button" aria-label="Show next Push-T prediction example">&rarr;</button>
+              </div>
+            </div>
+            <figcaption>Push-T</figcaption>
+          </figure>
+          <figure class="environment-example" data-environment="tworoom" data-label="Two-Room" data-directory="gifs_preds" data-example-type="prediction">
+            <div class="teaser-image-wrap">
+              <img src="static/images/gifs_preds/tworoom/example_0.gif" alt="Two-Room prediction example 1" loading="lazy">
+              <div class="teaser-example-navigation">
+                <button class="button is-small is-dark previous-example" type="button" aria-label="Show previous Two-Room prediction example">&larr;</button>
+                <button class="button is-small is-dark next-example" type="button" aria-label="Show next Two-Room prediction example">&rarr;</button>
+              </div>
+            </div>
+            <figcaption>Two-Room</figcaption>
+          </figure>
+          <figure class="environment-example" data-environment="reacher" data-label="Reacher" data-directory="gifs_preds" data-example-type="prediction">
+            <div class="teaser-image-wrap">
+              <img src="static/images/gifs_preds/reacher/example_0.gif" alt="Reacher prediction example 1" loading="lazy">
+              <div class="teaser-example-navigation">
+                <button class="button is-small is-dark previous-example" type="button" aria-label="Show previous Reacher prediction example">&larr;</button>
+                <button class="button is-small is-dark next-example" type="button" aria-label="Show next Reacher prediction example">&rarr;</button>
+              </div>
+            </div>
+            <figcaption>Reacher</figcaption>
+          </figure>
+          <figure class="environment-example" data-environment="cube" data-label="OGBench-Cube" data-directory="gifs_preds" data-example-type="prediction">
+            <div class="teaser-image-wrap">
+              <img src="static/images/gifs_preds/cube/example_0.gif" alt="OGBench-Cube prediction example 1" loading="lazy">
+              <div class="teaser-example-navigation">
+                <button class="button is-small is-dark previous-example" type="button" aria-label="Show previous OGBench-Cube prediction example">&larr;</button>
+                <button class="button is-small is-dark next-example" type="button" aria-label="Show next OGBench-Cube prediction example">&rarr;</button>
+              </div>
+            </div>
+            <figcaption>OGBench-Cube</figcaption>
+          </figure>
+        </div>
+
+        <div class="content has-text-justified content-spaced">
+          <p>
+            The visualizations above show destination masks decoded directly from autoregressive SAM-WM latent rollouts across all four benchmark environments. Starting from the initial observation, the transition model predicts future dense SAM3 feature maps conditioned on executed actions, from which the promptable SAM3 decoder extracts the semantic object masks.
+          </p>
+        </div>
+
+        <figure class="has-text-centered method-figure-container">
+          <img class="method-figure mask-fidelity-figure" src="static/images/miou_x_step.jpg"
+               alt="Decoded mask fidelity by rollout horizon" loading="lazy">
+        </figure>
+
+        <div class="content has-text-justified content-spaced">
+          <p>
+            To quantify prediction fidelity and compounding drift, we evaluate the mean Intersection over Union (mIoU) between predicted rollout masks and ground-truth environment segmentations across increasing time horizons. In Two-Room, where dynamics are smooth and contact-free, mask segmentation remains notably consistent across the rollout. In contact-rich environments like Push-T and OGBench-Cube, or fast articulated settings like Reacher, cumulative autoregressive errors lead to gradual degradation over long sequences. Crucially, while the mIoU across the local MPC planning horizon is not perfect, it remains entirely sufficient to guide trajectory optimization effectively. This is evidenced by the minimal performance gap between SAM-WM and the idealized Oracle Planner—which operates with an effective mIoU of 1 across the entire rollout horizon—confirming that local geometric trends matter far more than pixel-perfect long-range predictions.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="sam3-dinov2">
+      <div class="container is-max-desktop">
+        <h2 class="title is-3 has-text-centered">DINOv2 vs. SAM3</h2>
+        <div class="content has-text-justified">
+          <p>
+            To understand how segmentation representations behave inside world models, we compare <strong>SAM3</strong> directly against <strong>DINOv2</strong> (<a class="citation-link" href="#ref-oquab-2024">Oquab et al., 2024</a>) under the DINO-WM framework (<a class="citation-link" href="#ref-zhou-2025">Zhou et al., 2025</a>) across both latent image matching and mask-guided planning.
+          </p>
+        </div>
+
+        <div class="table-container">
+          <table class="table is-striped is-bordered results-table">
+            <thead>
+              <tr>
+                <th>Backbone</th>
+                <th>Goal</th>
+                <th>Two-Room*</th>
+                <th>Reacher</th>
+                <th>Push-T</th>
+                <th>Cube</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>DINOv2</td>
+                <td class="goal-image">Image</td>
+                <td>63 ± 1</td>
+                <td><strong>79 ± 6</strong></td>
+                <td>74 ± 4</td>
+                <td><strong>86 ± 5</strong></td>
+              </tr>
+              <tr>
+                <td>SAM3</td>
+                <td class="goal-image">Image</td>
+                <td>34 ± 2</td>
+                <td>69 ± 3</td>
+                <td>66 ± 3</td>
+                <td>72 ± 3</td>
+              </tr>
+              <tr style="background-color: #f0fdf4;">
+                <td><strong>SAM3 (SAM-WM)</strong></td>
+                <td class="goal-mask"><strong>Masks</strong></td>
+                <td><strong>74 ± 2</strong></td>
+                <td>61 ± 2</td>
+                <td><strong>83 ± 2</strong></td>
+                <td>64 ± 2</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="content has-text-justified content-spaced">
+          <ul>
+            <li>
+              <strong>SAM3 representations natively support world modeling:</strong> Although a general self-supervised backbone like DINOv2 yields stronger features for latent image matching (achieving ~10% higher success rates on full image goals), SAM3 still preserves the rich spatial dynamics needed to train accurate, action-conditioned transition predictors.
+            </li>
+<li>
+              <strong>Geometric mask planning can be advantageous in specific domains:</strong> When SAM3 features are paired with on-the-fly mask decoding and a geometric gIoU cost, the planner concentrates on task-relevant geometry rather than full scene appearance. In environments like Push-T or Two-Room with extended goal horizons, this approach can even exceed image-goal DINOv2 models (+9% and +11%, respectively), demonstrating that distance-aware geometric signals can be preferable to latent feature matching when navigating toward distant targets.
+            </li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+
+
+    <section class="section" id="references">
+      <div class="container is-max-desktop">
+        <h2 class="title is-3 has-text-centered">References</h2>
+        <div class="content has-text-justified content-spaced">
+          <ul class="reference-list">
+            <li id="ref-carion-2026">
+              &bull;&nbsp;Carion, Nicolas, Laura Gustafson, Yuan-Ting Hu, Shoubhik Debnath, Ronghang Hu,
+              Didac Suris, et al. <strong>SAM 3: Segment Anything with Concepts.</strong> In ICLR, 2026.
+            </li>
+            <li id="ref-lecun-2022">
+              &bull;&nbsp;LeCun, Yann. <strong>A Path Towards Autonomous Machine Intelligence.</strong> OpenReview, 2022.
+            </li>
+            <li id="ref-maes-2026">
+              &bull;&nbsp;Maes, Lucas, Quentin Le Lidec, Damien Scieur, Yann LeCun, and Randall Balestriero.
+              <strong>LeWorldModel: Stable End-to-End Joint-Embedding Predictive Architecture from Pixels.</strong>
+              arXiv preprint arXiv:2603.19312, 2026.
+            </li>
+            <li id="ref-oquab-2024">
+              &bull;&nbsp;Oquab, Maxime, Timothée Darcet, Théo Moutakanni, Huy V. Vo, Marc Szafraniec,
+              Vasil Khalidov, Pierre Fernandez, Daniel Haziza, Francisco Massa, Alaaeldin El-Nouby,
+              et al. <strong>DINOv2: Learning Robust Visual Features without Supervision.</strong> TMLR, 2024.
+            </li>
+            <li id="ref-sobal-2025">
+              &bull;&nbsp;Sobal, Vlad, Wancong Zhang, Kyunghyun Cho, Randall Balestriero, Tim G. J. Rudner,
+              and Yann LeCun. <strong>Learning from Reward-Free Offline Data: A Case for Planning with Latent
+              Dynamics Models.</strong> In NeurIPS, 2025.
+            </li>
+            <li id="ref-zhou-2025">
+              &bull;&nbsp;Zhou, Gaoyue, Hengkai Pan, Yann LeCun, and Lerrel Pinto.
+              <strong>DINO-WM: World Models on Pre-trained Visual Features enable Zero-shot Planning.</strong>
+              In ICML, 2025.
+            </li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="bibtex">
+      <div class="container is-max-desktop content">
+        <h2 class="title is-3 has-text-centered">BibTeX</h2>
+        <pre><code>@article{bianchi2026samwm,
+  title     = {World Models on Segmentation Features enable Mask-Guided Planning},
+  author    = {Bianchi, Lorenzo and Barsellotti, Luca and Falchi, Fabrizio and Messina, Nicola and Carrara, Fabio},
+  journal   = {arXiv preprint},
+  year      = {2026}
+}</code></pre>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="columns is-centered">
+        <div class="column is-8">
+          <div class="content has-text-centered">
+            <p>
+              This page was built starting from the
+              <a href="https://github.com/eliahuhorwitz/Academic-project-page-template" target="_blank" rel="noopener noreferrer">Academic Project Page Template</a>.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script defer src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script defer src="static/js/fontawesome.all.min.js"></script>
+  <script defer src="static/js/index.js"></script>
+</body>
+</html>
