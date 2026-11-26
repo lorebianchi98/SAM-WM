@@ -311,7 +311,18 @@ body > footer {
 
 @media screen and (max-width: 768px) {
   .publication-teaser-grid {
-    grid-template-columns: repeat(4, minmax(9rem, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    overflow-x: visible;
+  }
+
+  #cost-function .container,
+  #mask-predictions .container {
+    width: 100%;
+    min-width: 0;
+  }
+
+  #cost-function .equation {
+    max-width: 100%;
     overflow-x: auto;
   }
 }
